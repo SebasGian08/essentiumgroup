@@ -66,7 +66,7 @@
                                             {{ Auth::user()->nombres }}
                                             <a href="#" class="btn btn-danger btn-sm btn-rounded">
                                                 <i class="fa fa-user"></i>
-                                                {{ Auth::guard('web')->user()->profile->descripcion }}
+                                                {{ Auth::guard('web')->user()->profile->name }}
                                             </a>
                                         </p>
                                     </li>
