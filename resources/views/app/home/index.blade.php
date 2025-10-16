@@ -462,7 +462,7 @@ var csrfToken = '{{ csrf_token() }}';
 <!-- ======== subscribe-section end ======== -->
 
 <!-- ======== footer start ======== -->
-<footer class="footer" style="background-color: #ffffffff;">
+<footer class="footer">
     <div class="container">
         <div class="widget-wrapper">
             <div class="row">
