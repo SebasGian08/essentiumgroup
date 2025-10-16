@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-<style>
-
-</style>
-=======
->>>>>>> 4f6f996 (gestion , productos)
 <div id="modalMantenimientoProductos" class="modal modal-fill fade" data-backdrop="false" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <form id="registroProductos" method="POST" action="{{ route('auth.productos.store') }}"
