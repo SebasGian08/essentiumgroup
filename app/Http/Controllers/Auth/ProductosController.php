@@ -46,7 +46,7 @@ class ProductosController extends Controller
 
         // Validación de los datos
         $validator = Validator::make($request->all(), [
-            'id_producto' => 'nullable|integer|exists:productos,id_producto',
+            'id_producto' => 'nullable|integer',
             'id_producto_marca' => 'required|integer|exists:productos_marca,id_producto_marca',
             'codigo_producto' => 'required|string|max:100',
             'descripcion' => 'required|string|max:255',
@@ -56,9 +56,10 @@ class ProductosController extends Controller
         ]);
 
         // Buscar o crear el producto
-        $producto = $request->filled('id_producto')
+        $producto = ($request->id_producto && $request->id_producto != 0)
             ? Producto::findOrFail($request->id_producto)
             : new Producto();
+
 
         // Asignar campos
         $producto->id_producto_marca = $request->id_producto_marca;

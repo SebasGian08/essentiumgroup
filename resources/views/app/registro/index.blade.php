@@ -87,13 +87,13 @@
             <p class="return-text">
                 <a href="{{ route('index') }}" class="return-link">← Regresar a la página principal</a>
             </p>
-            <div class="icons">
+            <!-- <div class="icons">
                 <i class='bx bxl-facebook'></i>
                 <i class='bx bxl-instagram'></i>
                 <i class='bx bxl-tiktok'></i>
                 <i class='bx bxl-linkedin'></i>
             </div>
-            <p>Síguenos en nuestras redes sociales</p>
+            <p>Síguenos en nuestras redes sociales</p> -->
         </form>
 
     </div>

@@ -7,16 +7,6 @@
 @section('styles')
 <link rel="stylesheet" href="{{ asset('auth/plugins/datatable/datatables.min.css') }}">
 <link rel="stylesheet" href="{{ asset('app/assets_pedidos/style.css') }}">
-<style>
-#tableProductos thead th {
-    background-color: #272727;
-    color: #fff;
-    font-weight: 600;
-    text-align: left;
-    padding: 12px;
-    border-radius: 8px 8px 0 0;
-}
-</style>
 @endsection
 
 @section('contenido')

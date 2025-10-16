@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="{{ asset('app/assets_web_principal/css/main.css') }}">
 <link rel="stylesheet" href="{{ asset('app/assets_web_principal/carpetalogin/css/estilos.css') }}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 @endsection
 
@@ -246,8 +247,8 @@ var csrfToken = '{{ csrf_token() }}';
                         <li>Fácil de gestionar</li>
                         <li>24/7 Soporte</li>
                     </ul>
-                    <a href="https://wa.me/51980812235" target="_blank" class="main-btn btn-hover border-btn wow fadeInUp"
-                        data-wow-delay=".6s">Más información</a>
+                    <a href="https://wa.me/51980812235" target="_blank"
+                        class="main-btn btn-hover border-btn wow fadeInUp" data-wow-delay=".6s">Más información</a>
                 </div>
             </div>
             <div class="col-xl-6 col-lg-6 order-first order-lg-last">
@@ -481,23 +482,19 @@ var csrfToken = '{{ csrf_token() }}';
                         </p>
                         <ul class="socials">
                             <li>
-                                <a href="jvascript:void(0)">
+                                <a href="https://www.facebook.com/share/1SxRAPxKmp/" target="_blank">
                                     <i class="lni lni-facebook-filled"></i>
                                 </a>
                             </li>
                             <li>
-                                <a href="jvascript:void(0)">
-                                    <i class="lni lni-twitter-filled"></i>
+                                <a href="https://www.tiktok.com/@essentium.import?_t=ZS-90a6GzNhKLf&_r=1" target="_blank">
+                                    <i class="fa-brands fa-tiktok"></i>
                                 </a>
                             </li>
+
                             <li>
-                                <a href="jvascript:void(0)">
+                                <a href="https://www.instagram.com/essentium.import?igsh=MTQ5eTY3Y3N5MHNoMA==" target="_blank">
                                     <i class="lni lni-instagram-filled"></i>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="jvascript:void(0)">
-                                    <i class="lni lni-linkedin-original"></i>
                                 </a>
                             </li>
                         </ul>

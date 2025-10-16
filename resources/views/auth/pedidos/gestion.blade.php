@@ -44,7 +44,6 @@
     </div>
 </div>
 
-
 <div class="modal fade" id="modalGestionPedido" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content shadow-lg">
@@ -138,15 +137,19 @@
     </div>
 </div>
 <div class="modal fade" id="modalDetallePedido" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content shadow-lg">
-            <div class="modal-header" style="background: #5864ff; color: #fff;">
-                <h5 class="modal-title">Detalle del Pedido</h5>
+    <div class="modal-dialog modal-dialog-centered" id="modalGestionPedido" role="document" style="max-width: 90%;">
+        <div class="modal-content">
+            <!-- === CABECERA === -->
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Detalle del Pedido</span>
+                </h5>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
 
+<<<<<<< HEAD
             <div class="modal-body p-4">
                 <div class="row">
                     <div class="col-md-6">
@@ -172,8 +175,78 @@
                 <p id="d_comentario"></p>
             </div>
 
+=======
+            <!-- === CUERPO === -->
+            <div class="modal-body">
+                <!-- LOADER -->
+                <div id="d_loading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Cargando...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Cargando información del pedido...</p>
+                </div>
+
+                <!-- CONTENIDO -->
+                <div id="d_contenido" class="d-none">
+                    <div class="row-content">
+                        <!-- PANEL USUARIO ASOCIADO -->
+                        <div class="left-panel">
+                            <div class="info-box">
+                                <h6>Información del Usuario</h6>
+                                <div><strong>Ecommerce:</strong> <span id="d_ecommerce_nombre"></span></div>
+                                <div><strong>Nombres:</strong> <span id="d_usuario_nombre"></span></div>
+                                <div><strong>Email:</strong> <span id="d_usuario_email"></span></div>
+                                <div><strong>Telefono:</strong> <span id="d_telefono"></span></div>
+                                <div><strong>Dirección:</strong> <span id="d_direccion_cliente"></span></div>
+
+                            </div>
+                        </div>
+                        <!-- PANEL IZQUIERDO -->
+                        <div class="left-panel">
+                            <div class="info-box">
+                                <h6>Información del Cliente</h6>
+                                <div><strong>Cliente:</strong> <span id="d_cliente"></span></div>
+                                <div><strong>Teléfono:</strong> <span id="d_telefono"></span></div>
+                                <div><strong>Dirección:</strong> <span id="d_direccion_cliente"></span></div>
+                            </div>
+                        </div>
+
+                        <!-- PANEL DERECHO -->
+                        <div class="right-panel">
+                            <div class="info-box">
+                                <h6><i class="fas fa-receipt text-primary mr-1"></i> Información del Pedido</h6>
+                                <div><strong>Pedido ID:</strong> <span id="d_pedido_id"></span></div>
+                                <div><strong>Código Pedido:</strong> <span id="d_codigo_pedido"></span></div>
+                                <div><strong>Método Pago:</strong> <span id="d_metodo_pago"></span></div>
+                                <div><strong>Comentario:</strong> <span id="d_comentario"></span></div>
+                                <div><strong>Tipo Entrega:</strong> <span id="d_tipo_entrega"></span></div>
+                                <div><strong>Dirección Entrega:</strong> <span id="d_direccion_entrega"></span></div>
+                                <div><strong>Ubicación:</strong> <span id="d_ubicacion"></span></div>
+                                <div><strong>Fecha Pedido:</strong> <span id="d_fecha_pedido"></span></div>
+                                <div><strong>Fecha Entrega:</strong> <span id="d_fecha_entrega"></span></div>
+                                <div><strong>Motorizado:</strong> <span id="d_motorizado"></span></div>
+                                <div><strong>Total:</strong> <span id="d_total"></span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- === DETALLE DE PRODUCTOS === -->
+                    <div class="info-box mt-3">
+                        <h6><i class="fas fa-boxes text-primary mr-1"></i> Detalle de Productos</h6>
+                        <div id="g_detalle">
+                            <div id="d_detalles" class="table-responsive"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- === PIE === -->
+>>>>>>> 4f6f996 (gestion , productos)
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">
+                    Cerrar
+                </button>
             </div>
         </div>
     </div>
@@ -181,6 +254,10 @@
 
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4f6f996 (gestion , productos)
 @endsection
 
 @section('scripts')
@@ -338,7 +415,14 @@ function verDetalle(id_pedido) {
         url: "{{ route('auth.pedidos.gestion_get') }}",
         method: "GET",
         data: { id_pedido },
+        beforeSend: function() {
+            $('#d_loading').removeClass('d-none');
+            $('#d_contenido').addClass('d-none');
+        },
         success: function(resp) {
+            $('#d_loading').addClass('d-none');
+            $('#d_contenido').removeClass('d-none');
+
             if (!resp.success) {
                 Swal.fire('Atención', 'No se pudo cargar el pedido', 'warning');
                 return;
@@ -346,6 +430,7 @@ function verDetalle(id_pedido) {
 
             const p = resp.data;
 
+<<<<<<< HEAD
             // Llenar datos generales
             $('#d_cliente').text(p.cliente || '-');
             $('#d_telefono').text(p.telefono || '-');
@@ -359,10 +444,50 @@ function verDetalle(id_pedido) {
             let htmlDet = `
                 <table class="table table-sm">
                     <thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th></tr></thead>
+=======
+            // === Información del Usuario Asociado ===
+            $('#d_ecommerce_nombre').text(p.ecommerce || '-');
+            $('#d_usuario_nombre').text(p.nombre_usuario || '-');
+            $('#d_usuario_email').text(p.email_usuario || '-');
+            $('#d_telefono').text(p.telefono_usuario || '-');
+            $('#d_direccion_cliente').text(p.direccion_usuario || '-');
+            $('#d_metodo_pago').text(p.metodo_pago || '-');
+
+            // === Información del Cliente ===
+            $('#d_cliente').text(p.nombre_cliente || '-');
+            $('#d_telefono').text(p.telefono_cliente || '-');
+            $('#d_direccion_cliente').text(p.direccion_cliente || '-');
+
+            // === Información del Pedido ===
+            $('#d_pedido_id').text(p.id_pedido || '-');
+            $('#d_codigo_pedido').text(p.codigo_pedido || '-');
+            $('#d_metodo_pago').text(p.metodo_pago || '-');
+            $('#d_comentario').text(p.observacion || '-');
+            $('#d_tipo_entrega').text(p.tipo_pedido || '-');
+            $('#d_direccion_entrega').text(p.direccion_envio || '-');
+            $('#d_ubicacion').text(`${p.departamento || '-'} / ${p.provincia || '-'} / ${p.distrito || '-'}`);
+            $('#d_fecha_pedido').text(p.fecha_pedido || '-');
+            $('#d_fecha_entrega').text(p.fecha_entrega || '-');
+            $('#d_motorizado').text(p.seguimiento?.motorizado || '-');
+            $('#d_total').text(`S/ ${parseFloat(p.total || 0).toFixed(2)}`);
+
+            // === Detalle de productos ===
+            let htmlDet = `
+                <table class="table table-bordered table-striped table-hover">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Precio Unitario</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+>>>>>>> 4f6f996 (gestion , productos)
                     <tbody>
             `;
             if (p.detalles?.length) {
                 p.detalles.forEach(it => {
+<<<<<<< HEAD
                     htmlDet += `<tr>
                         <td>${it.descripcion}</td>
                         <td>${it.cantidad}</td>
@@ -375,7 +500,40 @@ function verDetalle(id_pedido) {
             htmlDet += '</tbody></table>';
 
             $('#d_detalles').html(htmlDet);
+=======
+                    const subtotal = parseFloat(it.cantidad * it.precio_unitario).toFixed(2);
+                    htmlDet += `
+                        <tr>
+                            <td>${it.descripcion}</td>
+                            <td>${it.cantidad}</td>
+                            <td>S/ ${parseFloat(it.precio_unitario || 0).toFixed(2)}</td>
+                            <td>S/ ${subtotal}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                htmlDet += `<tr><td colspan="4" class="text-muted text-center">Sin detalles</td></tr>`;
+            }
+            htmlDet += '</tbody></table>';
+            $('#d_detalles').html(htmlDet);
+
+            // === Evidencias ===
+            let evidenciasHtml = '';
+            const evKeys = ['evidencia_chat', 'evidencia_llamada', 'evidencia_llamada_chat', 'evidencia_entrega', 'evidencia_soporte'];
+            evKeys.forEach(k => {
+                if (p.seguimiento && p.seguimiento[k]) {
+                    evidenciasHtml += `
+                        <div class="col-md-6 mb-2">
+                            <strong>${k.replace('evidencia_', '').toUpperCase()}:</strong> 
+                            <a href="${p.seguimiento[k]}" target="_blank" class="text-primary">Ver evidencia</a>
+                        </div>
+                    `;
+                }
+            });
+            $('#d_evidencias').html(evidenciasHtml || '<p class="text-muted">Sin evidencias registradas</p>');
+>>>>>>> 4f6f996 (gestion , productos)
         },
+
         error: function() {
             Swal.fire('Error', 'Error al recuperar los datos del pedido', 'error');
         }
@@ -383,8 +541,17 @@ function verDetalle(id_pedido) {
 }
 
 function limpiarModalDetalle() {
+<<<<<<< HEAD
     $('#d_cliente, #d_telefono, #d_ubicacion, #d_motorizado, #d_total, #d_resumen, #d_comentario').text('');
     $('#d_detalles').html('<p class="text-muted">Cargando...</p>');
+=======
+    $('#d_cliente, #d_telefono, #d_direccion_cliente, #d_ubicacion, #d_fecha_pedido, #d_fecha_entrega, #d_metodo_pago, #d_total, #d_comentario, #d_usuario_nombre, #d_usuario_email, #d_tipo_entrega, #d_direccion_entrega, #d_pedido_id, #d_codigo_pedido, #d_motorizado')
+        .text('');
+    $('#d_detalles').html('');
+    $('#d_evidencias').html('');
+    $('#d_loading').removeClass('d-none');
+    $('#d_contenido').addClass('d-none');
+>>>>>>> 4f6f996 (gestion , productos)
 }
 
 

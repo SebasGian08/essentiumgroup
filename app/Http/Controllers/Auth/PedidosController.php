@@ -264,46 +264,60 @@ class PedidosController extends Controller
         return response()->json(['data' => $pedidos]);
     }
 
-
-    // Obtener un pedido con detalle + seguimiento
+   // Obtener un pedido con detalle + seguimiento
     public function gestionGet(Request $request)
     {
         $id_pedido = $request->id_pedido;
 
         $pedido = DB::table('pedidos as p')
             ->leftJoin('ubigeos as u', 'p.ubigeo_envio', '=', 'u.id_ubigeo')
+            ->leftJoin('users as us', 'p.id_usuario', '=', 'us.id')
+            ->leftJoin('metodo_pagos as m', 'p.id_metodo_pago', '=', 'm.id_metodo_pago')
             ->where('p.id_pedido', $id_pedido)
             ->select(
                 'p.id_pedido',
                 'p.nombre_cliente',
+                'p.direccion_cliente',
+                'p.telefono_cliente',
                 'p.fecha_pedido',
                 'p.fecha_entrega',
-                'p.total',
+                'm.descripcion as metodo_pago',
+                'p.codigo_pedido',
+                'p.tipo_pedido',
+                'p.direccion_envio',
+                'p.ubigeo_envio',
                 'u.departamento',
                 'u.provincia',
-                'u.distrito'
+                'u.distrito',
+                'p.subtotal',
+                'p.igv',
+                'p.total',
+                'p.observacion',
+                'us.nombres as nombre_usuario',
+                'us.email as email_usuario',
+                'us.telefono as telefono_usuario',
+                'us.direccion as direccion_usuario',
+                'us.ecommerce_nombre as ecommerce'
             )
             ->first();
-
-
 
         if (!$pedido) {
             return response()->json(['success' => false, 'message' => 'Pedido no encontrado']);
         }
 
         $detalles = DB::table('pedidos_detalle as pd')
-                ->join('productos as p', 'pd.id_producto', '=', 'p.id_producto')
-                ->where('pd.id_pedido', $id_pedido)
-                ->select(
-                    'pd.id_detalle',
-                    'pd.id_pedido',
-                    'pd.id_producto',
-                    'p.descripcion',
-                    'pd.cantidad',
-                    'pd.precio_unitario',
-                    'pd.total'
-                )
-                ->get();
+            ->join('productos as p', 'pd.id_producto', '=', 'p.id_producto')
+            ->where('pd.id_pedido', $id_pedido)
+            ->select(
+                'pd.id_detalle',
+                'pd.id_pedido',
+                'pd.id_producto',
+                'p.descripcion',
+                'pd.cantidad',
+                'pd.precio_unitario',
+                'pd.total'
+            )
+            ->get();
 
         $seguimiento = DB::table('pedido_seguimiento')
             ->where('id_pedido', $id_pedido)
@@ -313,78 +327,97 @@ class PedidosController extends Controller
             'success' => true,
             'data' => [
                 'id_pedido' => $pedido->id_pedido,
-                'cliente' => $pedido->nombre_cliente,
+                'nombre_cliente' => $pedido->nombre_cliente,
+                'direccion_cliente' => $pedido->direccion_cliente,
+                'telefono_cliente' => $pedido->telefono_cliente,
                 'fecha_pedido' => $pedido->fecha_pedido,
                 'fecha_entrega' => $pedido->fecha_entrega,
+                'codigo_pedido' => $pedido->codigo_pedido,
+                'metodo_pago' => $pedido->metodo_pago,
+                'tipo_pedido' => $pedido->tipo_pedido,
+                'direccion_envio' => $pedido->direccion_envio,
+                'ubigeo_envio' => $pedido->ubigeo_envio,
+                'departamento' => $pedido->departamento,
+                'provincia' => $pedido->provincia,
+                'distrito' => $pedido->distrito,
+                'subtotal' => $pedido->subtotal,
+                'igv' => $pedido->igv,
                 'total' => $pedido->total,
+                'observacion' => $pedido->observacion,
+                'nombre_usuario' => $pedido->nombre_usuario,
+                'email_usuario' => $pedido->email_usuario,
+                'telefono_usuario' => $pedido->telefono_usuario,
+                'direccion_usuario' => $pedido->direccion_usuario,
+                'ecommerce' => $pedido->ecommerce,
                 'detalles' => $detalles,
                 'seguimiento' => $seguimiento
             ]
         ]);
     }
 
-public function gestionUpdate(Request $request)
-{
-    $id_pedido = $request->id_pedido;
 
-    // Estados enviados desde el form (pueden ser varios)
-    $estadosMarcados = $request->estado ?? [];
+    public function gestionUpdate(Request $request)
+    {
+        $id_pedido = $request->id_pedido;
 
-    // Preparamos todos los estados posibles
-    $estados = [
-        'pendiente'     => in_array('pendiente', $estadosMarcados) ? 1 : 0,
-        'confirmado'    => in_array('confirmado', $estadosMarcados) ? 1 : 0,
-        'validado'      => in_array('validado', $estadosMarcados) ? 1 : 0,
-        'por_preparar'  => in_array('por_preparar', $estadosMarcados) ? 1 : 0,
-        'entregado'     => in_array('entregado', $estadosMarcados) ? 1 : 0,
-        'anulado'       => in_array('anulado', $estadosMarcados) ? 1 : 0,
-    ];
+        // Estados enviados desde el form (pueden ser varios)
+        $estadosMarcados = $request->estado ?? [];
 
-    // Guardamos el estado más reciente (para estado_entrega)
-    $estadoEntrega = end($estadosMarcados) ?: null;
+        // Preparamos todos los estados posibles
+        $estados = [
+            'pendiente'     => in_array('pendiente', $estadosMarcados) ? 1 : 0,
+            'confirmado'    => in_array('confirmado', $estadosMarcados) ? 1 : 0,
+            'validado'      => in_array('validado', $estadosMarcados) ? 1 : 0,
+            'por_preparar'  => in_array('por_preparar', $estadosMarcados) ? 1 : 0,
+            'entregado'     => in_array('entregado', $estadosMarcados) ? 1 : 0,
+            'anulado'       => in_array('anulado', $estadosMarcados) ? 1 : 0,
+        ];
 
-    // Buscar seguimiento actual
-    $seguimiento = DB::table('pedido_seguimiento')->where('id_pedido', $id_pedido)->first();
+        // Guardamos el estado más reciente (para estado_entrega)
+        $estadoEntrega = end($estadosMarcados) ?: null;
 
-    // Manejo de evidencias
-    $paths = [];
-    if ($request->hasFile('evidencias')) {
-        foreach ($request->file('evidencias') as $file) {
-            $path = $file->store("public/evidencias/{$id_pedido}");
-            $paths[] = Storage::url($path);
+        // Buscar seguimiento actual
+        $seguimiento = DB::table('pedido_seguimiento')->where('id_pedido', $id_pedido)->first();
+
+        // Manejo de evidencias
+        $paths = [];
+        if ($request->hasFile('evidencias')) {
+            foreach ($request->file('evidencias') as $file) {
+                $path = $file->store("public/evidencias/{$id_pedido}");
+                $paths[] = Storage::url($path);
+            }
         }
-    }
 
-    if ($seguimiento && !empty($seguimiento->evidencias_json)) {
-        $anteriores = json_decode($seguimiento->evidencias_json, true);
-        if (is_array($anteriores)) {
-            $paths = array_merge($anteriores, $paths);
+        if ($seguimiento && !empty($seguimiento->evidencias_json)) {
+            $anteriores = json_decode($seguimiento->evidencias_json, true);
+            if (is_array($anteriores)) {
+                $paths = array_merge($anteriores, $paths);
+            }
         }
+
+        $data = array_merge($estados, [
+            'estado_entrega' => $estadoEntrega,
+            'comentario'     => $request->comentario,
+            'motorizado'     => $request->motorizado,
+            'evidencias_json'=> json_encode($paths, JSON_UNESCAPED_SLASHES),
+            'updated_at'     => now()
+        ]);
+
+        if ($seguimiento) {
+            DB::table('pedido_seguimiento')
+                ->where('id_pedido', $id_pedido)
+                ->update($data);
+        } else {
+            $data['id_pedido'] = $id_pedido;
+            $data['created_at'] = now();
+            DB::table('pedido_seguimiento')->insert($data);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Seguimiento actualizado correctamente'
+        ]);
     }
-
-    $data = array_merge($estados, [
-        'estado_entrega' => $estadoEntrega,
-        'comentario'     => $request->comentario,
-        'motorizado'     => $request->motorizado,
-        'evidencias_json'=> json_encode($paths, JSON_UNESCAPED_SLASHES),
-        'updated_at'     => now()
-    ]);
-
-    if ($seguimiento) {
-        DB::table('pedido_seguimiento')
-            ->where('id_pedido', $id_pedido)
-            ->update($data);
-    } else {
-        $data['id_pedido'] = $id_pedido;
-        $data['created_at'] = now();
-        DB::table('pedido_seguimiento')->insert($data);
-    }
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Seguimiento actualizado correctamente'
-    ]);
-}
 
 
 
