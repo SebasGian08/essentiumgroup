@@ -44,148 +44,6 @@
     </div>
 </div>
 
-<!-- Modal: Gestionar pedido -->
-<style>
-.btn-gestionar {
-    background: linear-gradient(90deg, #5864ff, #00c3ff);
-    border: none;
-    color: #fff;
-    padding: 6px 14px;
-    border-radius: 25px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-.btn-gestionar i {
-    margin-right: 6px;
-    transition: transform 0.3s ease;
-}
-
-.btn-gestionar:hover {
-    background: linear-gradient(90deg, #00c3ff, #5864ff);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-}
-
-.btn-gestionar:hover i {
-    transform: rotate(20deg);
-}
-
-/* === MODAL GESTIÓN PEDIDO === */
-#modalGestionPedido .modal-content {
-    border-radius: 14px;
-    border: none;
-    overflow: hidden;
-}
-
-#modalGestionPedido .modal-header {
-    /*     background: linear-gradient(90deg, #5864ff, #646eff); */
-    color: #fff;
-    border-bottom: none;
-    padding: 1rem 1.5rem;
-}
-
-
-#modalGestionPedido .modal-body {
-    background: #f8f9ff;
-    padding: 1.5rem;
-}
-
-#modalGestionPedido h6 {
-    color: #4a4a4a;
-    margin-bottom: 0.3rem;
-}
-
-#modalGestionPedido .info-box {
-    background: #fff;
-    border-radius: 12px;
-    padding: 1rem;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-    margin-bottom: 1rem;
-}
-
-#modalGestionPedido .info-box div {
-    font-size: 0.9rem;
-    color: #555;
-}
-
-#modalGestionPedido .row-content {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
-#modalGestionPedido .left-panel,
-#modalGestionPedido .right-panel {
-    flex: 1;
-    min-width: 300px;
-}
-
-#g_detalle {
-    background: #fff;
-    border-radius: 12px;
-    padding: 0.8rem;
-    max-height: 220px;
-    overflow-y: auto;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-#modalGestionPedido #g_estados label {
-    display: inline-block;
-    background: #eef0ff;
-    color: #333;
-    padding: 0.4rem 0.8rem;
-    border-radius: 8px;
-    margin: 3px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-#modalGestionPedido #g_estados input[type="checkbox"] {
-    margin-right: 5px;
-}
-
-#modalGestionPedido #g_estados label:hover {
-    background: #dce0ff;
-}
-
-#modalGestionPedido textarea,
-#modalGestionPedido input[type="text"],
-#modalGestionPedido input[type="file"] {
-    border-radius: 10px;
-}
-
-#modalGestionPedido .modal-footer {
-    border-top: none;
-    background: #f8f9ff;
-    padding: 1rem 1.5rem;
-}
-
-#modalGestionPedido .btn-primary {
-    background: #5864ff;
-    border: none;
-    border-radius: 8px;
-    padding: 0.6rem 1.2rem;
-}
-
-#modalGestionPedido .btn-primary:hover {
-    background: #4450e0;
-}
-
-@media (max-width: 768px) {
-    #modalGestionPedido .row-content {
-        flex-direction: column;
-    }
-}
-
-.close {
-    color: #000000ff !important;
-}
-
-</style>
-
 
 <div class="modal fade" id="modalGestionPedido" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
@@ -288,15 +146,39 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
+
             <div class="modal-body p-4">
-                <!-- Contenido cargado dinámicamente -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Cliente:</strong> <span id="d_cliente"></span></p>
+                        <p><strong>Teléfono:</strong> <span id="d_telefono"></span></p>
+                        <p><strong>Ubicación:</strong> <span id="d_ubicacion"></span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Motorizado:</strong> <span id="d_motorizado"></span></p>
+                        <p><strong>Total:</strong> <span id="d_total"></span></p>
+                        <p><strong>Resumen:</strong> <span id="d_resumen"></span></p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <h6>Detalle de productos</h6>
+                <div id="d_detalles"></div>
+
+                <hr>
+
+                <h6>Seguimiento</h6>
+                <p id="d_comentario"></p>
             </div>
+
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
 </div>
+
 
 
 @endsection
@@ -449,8 +331,8 @@ function abrirGestion(id_pedido) {
 }
 
 function verDetalle(id_pedido) {
-    $('#modalDetallePedido').modal('show'); // Modal solo lectura
-    $('#modalDetallePedido .modal-body').html('<p>Cargando...</p>');
+    $('#modalDetallePedido').modal('show');
+    limpiarModalDetalle();
 
     $.ajax({
         url: "{{ route('auth.pedidos.gestion_get') }}",
@@ -463,33 +345,48 @@ function verDetalle(id_pedido) {
             }
 
             const p = resp.data;
-            let html = `
-                <h5>Cliente: ${p.cliente || '-'}</h5>
-                <p>Teléfono: ${p.telefono || '-'}</p>
-                <p>Ubicación: ${p.departamento || '-'} / ${p.provincia || '-'} / ${p.distrito || '-'}</p>
-                <p>Motorizado: ${p.motorizado || '-'}</p>
-                <p>Total: S/ ${parseFloat(p.total||0).toFixed(2)}</p>
-                <h6>Resumen del pedido</h6>
-                <p>Pedido: ${p.fecha_pedido || '-'} | Entrega: ${p.fecha_entrega || '-'}</p>
-                <h6>Detalle de productos</h6>
+
+            // Llenar datos generales
+            $('#d_cliente').text(p.cliente || '-');
+            $('#d_telefono').text(p.telefono || '-');
+            $('#d_ubicacion').text(`${p.departamento || '-'} / ${p.provincia || '-'} / ${p.distrito || '-'}`);
+            $('#d_motorizado').text(p.motorizado || '-');
+            $('#d_total').text(`S/ ${parseFloat(p.total || 0).toFixed(2)}`);
+            $('#d_resumen').html(`Pedido: ${p.fecha_pedido || '-'}<br>Entrega: ${p.fecha_entrega || '-'}`);
+            $('#d_comentario').text(p.seguimiento?.comentario || '-');
+
+            // Tabla de detalles
+            let htmlDet = `
                 <table class="table table-sm">
-                    <thead>
-                        <tr><th>Producto</th><th>Cantidad</th><th>Precio</th></tr>
-                    </thead>
+                    <thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th></tr></thead>
                     <tbody>
-                        ${p.detalles?.map(it => `<tr><td>${it.descripcion}</td><td>${it.cantidad}</td><td>S/ ${parseFloat(it.precio_unitario||0).toFixed(2)}</td></tr>`).join('') || '<tr><td colspan="3" class="text-muted">Sin detalles</td></tr>'}
-                    </tbody>
-                </table>
-                <h6>Seguimiento</h6>
-                <p>${p.seguimiento?.comentario || '-'}</p>
             `;
-            $('#modalDetallePedido .modal-body').html(html);
+            if (p.detalles?.length) {
+                p.detalles.forEach(it => {
+                    htmlDet += `<tr>
+                        <td>${it.descripcion}</td>
+                        <td>${it.cantidad}</td>
+                        <td>S/ ${parseFloat(it.precio_unitario || 0).toFixed(2)}</td>
+                    </tr>`;
+                });
+            } else {
+                htmlDet += `<tr><td colspan="3" class="text-muted">Sin detalles</td></tr>`;
+            }
+            htmlDet += '</tbody></table>';
+
+            $('#d_detalles').html(htmlDet);
         },
         error: function() {
             Swal.fire('Error', 'Error al recuperar los datos del pedido', 'error');
         }
     });
 }
+
+function limpiarModalDetalle() {
+    $('#d_cliente, #d_telefono, #d_ubicacion, #d_motorizado, #d_total, #d_resumen, #d_comentario').text('');
+    $('#d_detalles').html('<p class="text-muted">Cargando...</p>');
+}
+
 
 
 function clearModal() {
