@@ -204,21 +204,11 @@
     opacity: 0.8;
 }
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 4f6f996 (gestion , productos)
 #modalMantenimientoProductos .modal-header .btn-close:hover {
     opacity: 1;
 }
 
-<<<<<<< HEAD
-=======
-.close {
-    color: #000000ff !important;
-}
-
->>>>>>> 4f6f996 (gestion , productos)
 /* Body */
 #modalMantenimientoProductos .modal-body {
     background-color: #f8f9ff;

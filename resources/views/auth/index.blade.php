@@ -66,7 +66,7 @@
                                             {{ Auth::user()->nombres }}
                                             <a href="#" class="btn btn-danger btn-sm btn-rounded">
                                                 <i class="fa fa-user"></i>
-                                                DESARROLLADOR
+                                                {{ Auth::guard('web')->user()->profile->descripcion }}
                                             </a>
                                         </p>
                                     </li>
@@ -104,16 +104,11 @@
             <nav class="navbar navbar-expand-lg">
                 <div class="collapse navbar-collapse" id="navbarNavDropdown">
                     <ul class="navbar-nav">
-                        @if (Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_DESARROLLADOR ||
-                        Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_ADMINISTRADOR ||
-                        Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_LIDER)
                         <li class="nav-item {{ Route::currentRouteName() == 'auth.inicio' ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('auth.inicio') }}"><span class="active-item-here"></span>
                                 <i class="fa fa-home mr-5"></i> <span>Inicio</span>
                             </a>
                         </li>
-
-                        @endif
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true"
                                 aria-expanded="false">
@@ -134,7 +129,9 @@
                             </ul>
                         </li>
 
-                        @if (Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_DESARROLLADOR)
+                        @if (Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_DESARROLLADOR ||
+                        Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_ADMINISTRADOR ||
+                        Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_JEFE)
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true"
                                 aria-expanded="false">

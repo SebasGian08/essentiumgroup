@@ -12,7 +12,7 @@
                 </div>
                 <div class="modal-body row">
                     @csrf
-                    <input type="text" name="id_producto" id="id_producto"
+                    <input type="hidden" name="id_producto" id="id_producto"
                         value="{{ $Producto != null ? $Producto->id_producto : 0 }}">
                     <!-- Código del producto -->
                     <div class="form-group col-md-6">
