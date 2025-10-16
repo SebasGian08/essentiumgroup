@@ -9,6 +9,6 @@ class InicioController extends Controller
 {
     public function index(Request $request)
     {
-        //
+        return view('auth.inicio.index');
     }
 }
