@@ -1484,7 +1484,7 @@ header .notifications-menu ul.dropdown-menu li ul li a i {
         top: 0;
         right: 0;
         float: none;
-        background: #d2d6de;
+        /* background: #d2d6de; */
         padding-left: 10px
     }
 

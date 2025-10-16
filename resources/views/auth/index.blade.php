@@ -44,7 +44,7 @@
                                 style="background: #2d338c; border-radius: 50px;height: 50px !important;">
                                 <a href="#" class="dropdown-toggle d-flex align-items-center" data-toggle="dropdown"
                                     style="padding: 10px 20px;height: 45px;text-decoration: none;">
-                                    <img src="http://127.0.0.1:8000/auth/image/icon/usuario.png" alt="User Image"
+                                    <img src="{{ asset('auth/image/icon/usuario.png') }}" alt="User Image"
                                         style="width: 28px; height: 28px; border-radius: 50%; margin-right: 6px;">
                                     <div class="user-info text-left" style="line-height: 1;">
                                         <small style="color: #ffffffff; font-size: 10px;">
@@ -59,7 +59,7 @@
                                 <ul class="dropdown-menu scale-up">
                                     <li class="user-header">
                                         <div class="user-image-wrapper">
-                                            <img src="http://127.0.0.1:8000/auth/image/icon/usuario.png"
+                                            <img src="{{ asset('auth/image/icon/usuario.png') }}"
                                                 class="float-left" alt="User Image">
                                         </div>
                                         <p>
