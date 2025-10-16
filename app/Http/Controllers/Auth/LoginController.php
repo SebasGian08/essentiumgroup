@@ -88,34 +88,5 @@ class LoginController extends Controller
         return response()->json(['Success' => $status, 'Errors' => $validator->errors()]);
     }
 
-    public function store(Request $request)
-        {
-            // Validación de los datos
-            $validator = Validator::make($request->all(), [
-                'nombre' => 'required|string|max:255',
-                'tel' => 'required|string|max:20',
-                'fecha_nac' => 'required|date',
-                'apellido' => 'required|string|max:255', // Añade esta línea si estás usando apellido
-            ]);
-
-            if ($validator->fails()) {
-                return redirect()->back()
-                    ->withErrors($validator)
-                    ->withInput();
-            }
-
-            // Creación del nuevo alumno
-            $asistentes = new Asistentes();
-            $asistentes->celula_id = $request->celula_id; // Asegúrate de que este valor se esté enviando
-            $asistentes->nombre = $request->nombre;
-            $asistentes->tel = $request->tel;
-            $asistentes->apellido = $request->apellido;
-            $asistentes->fecha_nac = $request->fecha_nac;
-            $asistentes->save();
-
-            // Redirigir a una página de éxito o donde desees
-            return redirect()->route('auth.login.index')->with('success', 'Participante registrado exitosamente.');
-        }
-
-
+    
 }
