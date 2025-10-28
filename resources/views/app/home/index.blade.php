@@ -56,7 +56,7 @@ var csrfToken = '{{ csrf_token() }}';
             <div class="row align-items-center">
                 <div class="col-lg-12">
                     <nav class="navbar navbar-expand-lg">
-                        <a class="navbar-brand" href="index.html">
+                        <a class="navbar-brand" href="{{ route('index') }}">
                             <img src="{{ asset('app/img/logo1.png') }}" alt="Logo" />
                         </a>
                         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -470,7 +470,7 @@ var csrfToken = '{{ csrf_token() }}';
                 <div class="col-xl-4 col-lg-4 col-md-6">
                     <div class="footer-widget">
                         <div class="logo mb-30">
-                            <a href="index.html">
+                            <a href="{{ route('index') }}">
                                 <img src="{{ asset('app/img/logo1.png') }}" alt="" />
                             </a>
                         </div>
