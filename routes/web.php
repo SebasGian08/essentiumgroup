@@ -75,6 +75,16 @@ Route::group(['prefix' => 'auth', 'middleware' => 'auth:web'], function () {
         Route::get('/partialView/{id}', 'Auth\ProductosController@partialView')->name('auth.productos.create');
     });
 
+    /* COMPRAS */
+    Route::group(['prefix' => 'compras'], function () {
+        Route::get('', 'Auth\ComprasController@index')->name('auth.compras');
+        Route::get('listado', 'Auth\ComprasController@verlistado')->name('auth.compras.listado'); // ✅
+        Route::get('list_all', 'Auth\ComprasController@list_all')->name('auth.compras.list_all');
+        Route::post('store', 'Auth\ComprasController@store')->name('auth.compras.store');
+        Route::post('delete', 'Auth\ComprasController@delete')->name('auth.compras.delete');
+    });
+
+
 });
 
 //Pagina principal

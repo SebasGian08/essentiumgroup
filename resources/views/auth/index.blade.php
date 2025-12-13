@@ -59,8 +59,8 @@
                                 <ul class="dropdown-menu scale-up">
                                     <li class="user-header">
                                         <div class="user-image-wrapper">
-                                            <img src="{{ asset('auth/image/icon/usuario.png') }}"
-                                                class="float-left" alt="User Image">
+                                            <img src="{{ asset('auth/image/icon/usuario.png') }}" class="float-left"
+                                                alt="User Image">
                                         </div>
                                         <p>
                                             {{ Auth::user()->nombres }}
@@ -132,6 +132,46 @@
                         @if (Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_DESARROLLADOR ||
                         Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_ADMINISTRADOR ||
                         Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_JEFE)
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true"
+                                aria-expanded="false">
+                                <i class="fa fa-shopping-bag mr-2"></i>
+                                <span>Compras</span>
+                            </a>
+                            <ul class="dropdown-menu multilevel scale-up-left">
+                                <a class="nav-link" href="{{ route('auth.compras.listado') }}">
+                                    <i class="fa fa-list-alt mr-2"></i> Listado de Compras
+                                </a>
+
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('auth.compras') }}">
+                                        <i class="fa fa-cart-plus mr-2"></i> Generar Compra
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true"
+                                aria-expanded="false">
+                                <i class="fa fa-archive mr-2"></i>
+                                <span>Kardex</span>
+                            </a>
+                            <ul class="dropdown-menu multilevel scale-up-left">
+                                <li class="nav-item">
+                                    <a class="nav-link" href="">
+                                        <i class="fa fa-exchange mr-2"></i> Ver movimientos
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="">
+                                <i class="fa fa-bar-chart mr-2"></i>
+                                <span>Reportes</span>
+                            </a>
+                        </li>
+
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true"
                                 aria-expanded="false">
