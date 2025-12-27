@@ -2,9 +2,9 @@ $(function () {
     var $tableProductos = $('#tableProductos').DataTable({
         responsive: true,
         autoWidth: false,
-        pageLength: 10, // 👈 cantidad por página
+        pageLength: 10, // cantidad por página
         lengthMenu: [5, 10, 25, 50],
-        scrollX: true, // 👈 agrega scroll horizontal si hay muchas columnas
+        scrollX: true, // agrega scroll horizontal si hay muchas columnas
         language: {
             url: "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json",
             paginate: {
@@ -26,7 +26,7 @@ $(function () {
         columns: [
             { data: 'id_producto', title: 'ID' },
             { data: 'descripcion', title: 'Producto' },
-            { data: 'precio', title: 'Precio', render: $.fn.dataTable.render.number(',', '.', 2, 'S/.') },
+            { data: 'precio_venta', title: 'Precio Venta', render: $.fn.dataTable.render.number(',', '.', 2, 'S/.') },
             { data: 'stock', title: 'Stock' },
             {
                 data: 'estado',
@@ -62,13 +62,13 @@ $(function () {
         language: { url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json' }
     });
 
-    // ✅ Editar producto
+    // Editar producto
     $('#tableProductos').on("click", ".btn-update", function () {
         const id = $tableProductos.row($(this).parents("tr")).data().id_producto;
         invocarModalView(id);
     });
 
-    // ✅ Eliminar producto
+    // Eliminar producto
     $('#tableProductos').on("click", ".btn-delete", function () {
         const id = $tableProductos.row($(this).parents("tr")).data().id;
         const formData = new FormData();
@@ -76,7 +76,7 @@ $(function () {
         formData.append("id", id);
 
         confirmAjax(
-            `/auth/productos/delete`, // ✅ plural
+            `/auth/productos/delete`,
             formData,
             "POST",
             null,
@@ -87,14 +87,14 @@ $(function () {
         );
     });
 
-    // ✅ Registrar producto
+    // Registrar producto
     $("#modalRegistrarProductos").on("click", function () {
         invocarModalView();
     });
 
     function invocarModalView(id) {
         invocarModal(
-            `/auth/productos/partialView/${id ? id : 0}`, // ✅ plural
+            `/auth/productos/partialView/${id ? id : 0}`,
             function ($modal) {
                 if ($modal.attr("data-reload") === "true")
                     $tableProductos.ajax.reload(null, false);

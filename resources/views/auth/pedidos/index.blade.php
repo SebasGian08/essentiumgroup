@@ -117,14 +117,15 @@
                     </div>
                     <div class="form-group col-lg-4">
                         <label>Ubigeo *</label>
-                        <select name="ubigeo_envio" class="form-control" required>
-                            <option value="" disabled selected>Seleccione ubigeo...</option>
+                        <select name="ubigeo_envio" id="ubigeo_envio" class="form-control" required>
+                            <option value="">Seleccione ubigeo...</option>
                             @foreach($ubigeos as $ubigeo)
                             <option value="{{ $ubigeo->id_ubigeo }}">
                                 {{ $ubigeo->departamento }} - {{ $ubigeo->provincia }} - {{ $ubigeo->distrito }}
                             </option>
                             @endforeach
                         </select>
+
                     </div>
 
 
@@ -142,13 +143,13 @@
                         <div class="productos-pos" id="productosPos">
                             @foreach($productos as $producto)
                             <div class="producto-card" data-id="{{ $producto->id_producto }}"
-                                data-nombre="{{ $producto->descripcion }}" data-precio="{{ $producto->precio }}">
+                                data-nombre="{{ $producto->descripcion }}" data-precio="{{ $producto->precio_venta }}">
 
                                 <img src="{{ asset($producto->imagen) }}" alt="{{ $producto->descripcion }}">
 
                                 <div class="info">
                                     <h6>{{ $producto->descripcion }}</h6>
-                                    <p class="precio">S/ {{ number_format($producto->precio, 2) }}</p>
+                                    <p class="precio">S/ {{ number_format($producto->precio_venta, 2) }}</p>
                                     <p class="stock">Stock: {{ $producto->stock }}</p> {{-- mostramos stock --}}
                                 </div>
 
@@ -200,6 +201,18 @@
 @endsection
 
 @section('scripts')
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+$(document).ready(function () {
+    $('#ubigeo_envio').select2({
+        placeholder: 'Buscar ubigeo...',
+        allowClear: true,
+        width: '100%'
+    });
+});
+</script>
+
 <script type="text/javascript" src="{{ asset('auth/js/pedidos/index.js') }}"></script>
 @endsection

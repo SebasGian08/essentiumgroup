@@ -28,7 +28,7 @@ class ProductosController extends Controller
             return [
                 'id_producto' => $producto->id_producto,
                 'descripcion' => $producto->descripcion,
-                'precio' => $producto->precio,
+                'precio_venta' => $producto->precio_venta,
                 'stock' => $producto->stock,
                 'estado' => $producto->estado,
                 'acciones' => '
@@ -50,7 +50,8 @@ class ProductosController extends Controller
             'id_producto_marca' => 'required|integer|exists:productos_marca,id_producto_marca',
             'codigo_producto' => 'required|string|max:100',
             'descripcion' => 'required|string|max:255',
-            'precio' => 'required|numeric|min:0',
+            'precio_compra' => 'required|numeric|min:0',
+            'precio_venta' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'estado' => 'required|in:1,2'
         ]);
@@ -65,7 +66,8 @@ class ProductosController extends Controller
         $producto->id_producto_marca = $request->id_producto_marca;
         $producto->codigo_producto = $request->codigo_producto;
         $producto->descripcion = $request->descripcion;
-        $producto->precio = $request->precio;
+        $producto->precio_compra = $request->precio_compra;
+        $producto->precio_venta = $request->precio_venta;
         $producto->stock = $request->stock;
         $producto->estado = $request->estado;
 

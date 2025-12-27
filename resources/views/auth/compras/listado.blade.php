@@ -48,10 +48,11 @@
                         <th>#</th>
                         <th>Fecha</th>
                         <th>Documento</th>
+                        <th>Número</th>
                         <th>Proveedor</th>
-                        <th>Productos</th>
                         <th>Total</th>
                         <th>Estado</th>
+                        <th>Acción</th>
                     </tr>
                 </thead>
             </table>
@@ -90,35 +91,14 @@ $(document).ready(function() {
                 render: data => data ?? ''
             },
             {
-                data: 'numero_documento',
-                render: data => `<span class="badge badge-info">${data}</span>`
+                data: 'tipo_documento',
+                render: data => data.toUpperCase()
             },
             {
-                data: 'proveedor',
-                render: function(data, type, row) {
-                    return `
-                        <div>
-                            <strong>${data}</strong><br>
-                            <small class="text-muted">${row.ruc_proveedor || ''}</small>
-                        </div>
-                    `;
-                }
+                data: 'numero_documento'
             },
             {
-                data: 'productos',
-                orderable: false,
-                searchable: false,
-                render: function(data) {
-                    if (!data || data.length === 0)
-                        return '<span class="text-muted">Sin productos</span>';
-
-                    let html = '';
-                    data.forEach(p => {
-                        html +=
-                            `<div class="producto-badge">${p.descripcion} (${p.cantidad})</div>`;
-                    });
-                    return html;
-                }
+                data: 'razon_social'
             },
             {
                 data: 'total',
@@ -127,13 +107,47 @@ $(document).ready(function() {
             {
                 data: 'estado',
                 render: function(estado) {
-                    let badge = 'secondary';
-                    if (estado === 'registrado') badge = 'primary';
-                    if (estado === 'anulado') badge = 'danger';
+                    let texto = 'Anulado';
+                    let badge = 'danger';
 
-                    return `<span class="badge badge-${badge}">${estado}</span>`;
+                    if (estado == 1) {
+                        texto = 'Activo';
+                        badge = 'primary';
+                    }
+
+                    return `<span class="badge badge-${badge}">${texto}</span>`;
+                }
+            },
+            {
+                data: 'id_compra',
+                orderable: false,
+                searchable: false,
+                className: 'text-center',
+                render: function(id) {
+                    return `
+                        <a href="/auth/compras/ver/${id}" 
+                        class="btn btn-sm btn-outline-primary" 
+                        title="Ver detalle de la compra">
+                            <i class="fa fa-eye"></i>
+                        </a>
+                        <a href="/auth/compras/editar/${id}" 
+                        class="btn btn-sm btn-outline-warning" 
+                        title="Editar compra">
+                            <i class="fa fa-edit"></i>
+                        </a>
+                        <button type="button" 
+                                class="btn btn-sm btn-outline-danger btn-eliminar-compra" 
+                                data-id="${id}" 
+                                title="Eliminar compra">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    `;
                 }
             }
+
+
+
+
         ],
         order: [
             [1, 'desc']

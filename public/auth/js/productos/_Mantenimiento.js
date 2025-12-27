@@ -6,3 +6,4 @@ $(function(){
     OnSuccessRegistroProductos = (data) => onSuccessForm(data, $form, $modal);
     OnFailureRegistroProductos = () => onFailureForm();
 });
+

@@ -83,8 +83,25 @@ Route::group(['prefix' => 'auth', 'middleware' => 'auth:web'], function () {
         Route::post('store', 'Auth\ComprasController@store')->name('auth.compras.store');
         Route::post('delete', 'Auth\ComprasController@delete')->name('auth.compras.delete');
     });
+    /* MOVIMIENTOS */
+    Route::group(['prefix' => 'movimientos'], function () {
+        Route::get('/', 'Auth\MovimientosController@index')->name('auth.movimientos');
+        Route::get('/list_all', 'Auth\MovimientosController@list_all')->name('auth.movimientos.list_all');
+    });
+    /* MARCAS */
+    Route::group(['prefix' => 'marcas'], function () {
+        Route::get('', 'Auth\MarcasController@index')->name('auth.marcas'); // Vista principal
+        Route::post('/store', 'Auth\MarcasController@store')->name('auth.marcas.store'); // Guardar marca
+        Route::get('/list_all', 'Auth\MarcasController@list')->name('auth.marcas.list_all'); // JSON para DataTable
+        Route::post('/delete', 'Auth\MarcasController@delete')->name('auth.marcas.delete'); // Eliminar marca
+        Route::get('/partialView/{id}', 'Auth\MarcasController@partialView')->name('auth.marcas.create'); // Formulario parcial para editar/crear
+    });
 
-
+    Route::group(['prefix' => 'proveedores'], function () {
+        Route::get('', 'Auth\ProveedorController@index')->name('auth.proveedores');
+        Route::get('list_all', 'Auth\ProveedorController@list')->name('auth.proveedores.list_all');
+        Route::post('delete', 'Auth\ProveedorController@delete')->name('auth.proveedores.delete');
+    });
 });
 
 //Pagina principal

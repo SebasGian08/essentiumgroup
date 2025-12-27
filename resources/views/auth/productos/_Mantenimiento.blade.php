@@ -22,9 +22,15 @@
                         <span data-valmsg-for="codigo_producto" class="text-danger"></span>
                     </div>
 
-                    <!-- Marca -->
                     <div class="form-group col-md-6">
-                        <label for="id_producto_marca"><b>Marca</b></label>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label for="id_producto_marca" class="mb-0"><b>Marca</b></label>
+                            <a href="#" class="btn btn-link btn-sm p-0" data-toggle="modal"
+                                data-target="#modalAgregarMarca">
+                                <i class="fa fa-plus"></i> Agregar Marca
+                            </a>
+                        </div>
+
                         <select class="form-control" name="id_producto_marca" id="id_producto_marca" required>
                             <option value="">Seleccione una marca</option>
                             @foreach($Marcas as $marca)
@@ -44,22 +50,35 @@
                     </div>
 
                     <div class="form-group col-md-6">
-                        <label for="precio">Precio</label>
-                        <input type="number" class="form-input" name="precio" id="precio"
-                            value="{{ $Producto ? $Producto->precio : '' }}" step="0.01" required>
-                        <span data-valmsg-for="precio" class="text-danger"></span>
+                        <label for="precio_compra">Precio de Compra</label>
+                        <input type="number" class="form-input" name="precio_compra" id="precio_compra"
+                            value="{{ $Producto ? $Producto->precio_compra : '' }}" step="0.01" required>
+                        <span data-valmsg-for="precio_compra" class="text-danger"></span>
                     </div>
-
+                    <div class="form-group col-md-6">
+                        <label for="precio_venta">Precio de Venta</label>
+                        <input type="number" class="form-input" name="precio_venta" id="precio_venta"
+                            value="{{ $Producto ? $Producto->precio_venta : '' }}" step="0.01" required>
+                        <span data-valmsg-for="precio_venta" class="text-danger"></span>
+                    </div>
                     <div class="form-group col-md-6">
                         <label for="stock">Stock</label>
                         <input type="number" class="form-input" name="stock" id="stock"
-                            value="{{ $Producto ? $Producto->stock : '' }}" required>
-                        <span data-valmsg-for="stock" class="text-danger"></span>
+                            value="{{ $Producto ? $Producto->stock : '0' }}" step="1" required> <span
+                            data-valmsg-for="stock" class="text-danger"></span>
                     </div>
-
+                    <div class="form-group col-md-6">
+                        <label for="estado">Estado</label>
+                        <select class="form-input" name="estado" id="estado" required>
+                            <option value="1" {{ $Producto && $Producto->estado == '1' ? 'selected' : '' }}>Activo
+                            </option>
+                            <option value="2" {{ $Producto && $Producto->estado == '2' ? 'selected' : '' }}>Inactivo
+                            </option>
+                        </select>
+                    </div>
                     <!-- Imagen del producto -->
                     <div class="form-group col-md-6">
-                        <label for="imagen">Imagen</label>
+                        <label for="imagen">Imagen del producto</label>
                         <input type="file" class="form-input" name="imagen" id="imagen" accept="image/*">
                         <span data-valmsg-for="imagen" class="text-danger"></span>
 
@@ -71,15 +90,7 @@
                         </div>
                     </div>
 
-                    <div class="form-group col-md-6">
-                        <label for="estado">Estado</label>
-                        <select class="form-input" name="estado" id="estado" required>
-                            <option value="1" {{ $Producto && $Producto->estado == '1' ? 'selected' : '' }}>Activo
-                            </option>
-                            <option value="2" {{ $Producto && $Producto->estado == '2' ? 'selected' : '' }}>Inactivo
-                            </option>
-                        </select>
-                    </div>
+
 
                 </div>
                 <div class="modal-footer">
@@ -108,3 +119,4 @@ document.getElementById('imagen').addEventListener('change', function(event) {
 });
 </script>
 <script type="text/javascript" src="{{ asset('auth/js/productos/_Mantenimiento.js') }}"></script>
+<script type="text/javascript" src="{{ asset('auth/js/productos/_MantenimientoMarca.js') }}"></script>

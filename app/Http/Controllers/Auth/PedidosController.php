@@ -13,6 +13,7 @@ use BolsaTrabajo\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class PedidosController extends Controller
 {
@@ -52,12 +53,23 @@ class PedidosController extends Controller
     }
 
     public function gestiondepedidos(){
-        return view('auth.pedidos.gestion');
+        $motorizados = User::where('profile_id', 7)
+                   ->where('estado', 1)
+                   ->whereNull('deleted_at')
+                   ->get();
+        return view('auth.pedidos.gestion', compact('motorizados'));
     }
 
     public function store(Request $request)
     {
-        // Validación básica del pedido
+        // ===============================
+        // DEBUG INICIAL
+        // ===============================
+        //dd($request->productos);
+
+        // ===============================
+        // VALIDACIONES DEL FORMULARIO
+        // ===============================
         $validator = Validator::make($request->all(), [
             'id_usuario' => 'required|exists:users,id',
             'razon_social' => 'required|string|max:255',
@@ -68,31 +80,72 @@ class PedidosController extends Controller
             'metodo_pago' => 'required|exists:metodo_pagos,id_metodo_pago',
             'direccion_envio' => 'required|string|max:255',
             'ubigeo_envio' => 'required|exists:ubigeos,id_ubigeo',
-            'productos' => 'required|array|min:1',
-            'productos.*.id' => 'required|exists:productos,id_producto',
-            'productos.*.cantidad' => 'required|integer|min:1',
-            'productos.*.precio' => 'required|numeric|min:0',
+
+            // ===============================
+            // VALIDACIÓN DE PRODUCTOS
+            // ===============================
+                'productos' => 'required|array|min:1',
+                'productos.*.id_producto' => [
+                    'required',
+                    Rule::exists('productos', 'id_producto')
+                        ->whereNull('deleted_at')
+                ],
+
+                'productos.*.cantidad' => 'required|integer|min:1',
+                'productos.*.precio' => 'required|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
         }
 
+        // ===============================
+        // VALIDACIÓN DE STOCK (NEGOCIO)
+        // ===============================
+        foreach ($request->productos as $p) {
+            $producto = DB::table('productos')
+                ->where('id_producto', $p['id_producto'])
+                ->first();
+
+            if (!$producto) {
+                return redirect()->back()
+                    ->withErrors(['productos' => 'Producto no encontrado.'])
+                    ->withInput();
+            }
+
+            if ($p['cantidad'] > $producto->stock) {
+                return redirect()->back()
+                    ->withErrors([
+                        'productos' => "Stock insuficiente para el producto: {$producto->descripcion}"
+                    ])
+                    ->withInput();
+            }
+        }
+
+        // ===============================
+        // TRANSACCIÓN
+        // ===============================
         DB::beginTransaction();
 
         try {
-            // Generar código de pedido (puedes personalizarlo)
+            // ===============================
+            // CÁLCULOS
+            // ===============================
             $codigoPedido = 'PED-' . time();
 
-            // Calcular subtotal, igv y total
             $subtotal = 0;
             foreach ($request->productos as $p) {
                 $subtotal += $p['cantidad'] * $p['precio'];
             }
+
             $igv = $subtotal * 0.18;
             $total = $subtotal + $igv;
 
-            // Crear pedido
+            // ===============================
+            // REGISTRAR PEDIDO
+            // ===============================
             $pedidoId = DB::table('pedidos')->insertGetId([
                 'codigo_pedido' => $codigoPedido,
                 'id_usuario' => $request->id_usuario,
@@ -115,24 +168,54 @@ class PedidosController extends Controller
                 'updated_at' => now(),
             ]);
 
-            // Insertar productos en pedidos_detalle
+            // ===============================
+            // DETALLE DEL PEDIDO
+            // ===============================
             foreach ($request->productos as $p) {
                 DB::table('pedidos_detalle')->insert([
                     'id_pedido' => $pedidoId,
-                    'id_producto' => $p['id'],
+                    'id_producto' => $p['id_producto'],
                     'cantidad' => $p['cantidad'],
                     'precio_unitario' => $p['precio'],
                     'total' => $p['cantidad'] * $p['precio'],
                 ]);
+
+                // Descontar stock
+                DB::table('productos')
+                    ->where('id_producto', $p['id_producto'])
+                    ->decrement('stock', $p['cantidad']);
             }
 
+            // ===============================
+            // SEGUIMIENTO INICIAL
+            // ===============================
+            DB::table('pedido_seguimiento')->insert([
+                'id_pedido' => $pedidoId,
+                'id_estado_seguimiento' => 1,
+                'id_motorizado' => null,
+                'id_usuario_registro' => auth()->id(),
+                'comentario' => 'Pedido creado automáticamente.',
+                'evidencia_chat' => 0,
+                'evidencia_llamada_chat' => 0,
+                'evidencia_entrega' => 0,
+                'evidencia_soporte' => 0,
+                'created_at' => now(),
+            ]);
+
             DB::commit();
-            return redirect()->route('auth.pedidos')->with('success', 'Pedido registrado correctamente.');
+
+            return redirect()
+                ->route('auth.pedidos')
+                ->with('success', 'Pedido registrado correctamente.');
+
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Ocurrió un error al registrar el pedido: ' . $e->getMessage());
+
+            return redirect()->back()
+                ->with('error', 'Ocurrió un error al registrar el pedido: ' . $e->getMessage());
         }
     }
+
 
     public function list_all(Request $request)
     {
@@ -140,15 +223,33 @@ class PedidosController extends Controller
 
         $query = DB::table('pedidos')
             ->leftJoin('ubigeos', 'ubigeos.id_ubigeo', '=', 'pedidos.ubigeo_envio')
-            ->leftJoin(DB::raw('(SELECT id_pedido, comentario, pendiente, confirmado, validado, anulado, por_preparar, entregado 
-                                FROM pedido_seguimiento) as ps'), 'ps.id_pedido', '=', 'pedidos.id_pedido')
-            ->leftJoin(DB::raw('(SELECT pd.id_pedido, GROUP_CONCAT(CONCAT(p.descripcion, " (", pd.cantidad, ")")) as productos
-                                FROM pedidos_detalle pd
-                                JOIN productos p ON pd.id_producto = p.id_producto
-                                GROUP BY pd.id_pedido) as pdp'), 'pdp.id_pedido', '=', 'pedidos.id_pedido')
+
+            // SEGUIMIENTO NORMALIZADO
+            ->leftJoin(DB::raw('(
+                SELECT 
+                    ps.id_pedido,
+                    GROUP_CONCAT(es.nombre) AS estados,
+                    MAX(ps.comentario) AS comentario
+                FROM pedido_seguimiento ps
+                JOIN estado_seguimiento es 
+                    ON es.id_estado_seguimiento = ps.id_estado_seguimiento
+                WHERE ps.deleted_at IS NULL
+                GROUP BY ps.id_pedido
+            ) AS ps'), 'ps.id_pedido', '=', 'pedidos.id_pedido')
+
+            // PRODUCTOS
+            ->leftJoin(DB::raw('(
+                SELECT 
+                    pd.id_pedido,
+                    GROUP_CONCAT(CONCAT(p.descripcion, " (", pd.cantidad, ")")) AS productos
+                FROM pedidos_detalle pd
+                JOIN productos p ON pd.id_producto = p.id_producto
+                GROUP BY pd.id_pedido
+            ) AS pdp'), 'pdp.id_pedido', '=', 'pedidos.id_pedido')
+
             ->select(
-                'pedidos.nombre_cliente',
                 'pedidos.id_pedido',
+                'pedidos.nombre_cliente',
                 'pedidos.id_usuario',
                 'pedidos.fecha_entrega',
                 'pedidos.fecha_pedido',
@@ -159,22 +260,19 @@ class PedidosController extends Controller
                 'pedidos.created_at',
                 'pedidos.total',
                 'pedidos.observacion',
+
                 'ubigeos.departamento',
                 'ubigeos.provincia',
                 'ubigeos.distrito',
+
                 'ps.comentario',
-                'ps.pendiente',
-                'ps.confirmado',
-                'ps.validado',
-                'ps.anulado',
-                'ps.por_preparar',
-                'ps.entregado',
+                'ps.estados',
                 'pdp.productos'
             )
             ->where('pedidos.id_usuario', $userId)
             ->orderBy('pedidos.created_at', 'desc');
 
-        // Filtros de fechas
+        // FILTROS DE FECHA
         if ($request->filled('fecha_inicio')) {
             $query->whereDate('pedidos.fecha_pedido', '>=', $request->fecha_inicio);
         }
@@ -183,26 +281,24 @@ class PedidosController extends Controller
             $query->whereDate('pedidos.fecha_pedido', '<=', $request->fecha_fin);
         }
 
-        $pedidos = $query->get()->map(function($pedido) {
-            // Convertir productos concatenados en array de objetos
-            $productos = explode(',', $pedido->productos ?? '');
-            $productos = array_map(function($p) {
-                preg_match('/^(.*)\s\((\d+)\)$/', trim($p), $matches);
-                return [
-                    'descripcion' => $matches[1] ?? trim($p),
-                    'cantidad' => $matches[2] ?? ''
-                ];
-            }, $productos);
+        $pedidos = $query->get()->map(function ($pedido) {
 
-            $pedido->productos = $productos;
+            // PRODUCTOS A ARRAY
+            $pedido->productos = collect(explode(',', $pedido->productos ?? ''))
+                ->map(function ($p) {
+                    preg_match('/^(.*)\s\((\d+)\)$/', trim($p), $m);
+                    return [
+                        'descripcion' => $m[1] ?? trim($p),
+                        'cantidad' => $m[2] ?? 0
+                    ];
+                });
 
-            // Generar array de estados de seguimiento
-            $pedido->estado_seguimiento = [];
-            foreach (['pendiente','confirmado','validado','anulado','por_preparar','entregado'] as $estado) {
-                if ($pedido->$estado == 1) {
-                    $pedido->estado_seguimiento[] = $estado;
-                }
-            }
+            // ESTADOS A ARRAY
+            $pedido->estado_seguimiento = $pedido->estados
+                ? explode(',', $pedido->estados)
+                : [];
+
+            unset($pedido->estados);
 
             return $pedido;
         });
@@ -216,208 +312,172 @@ class PedidosController extends Controller
         $userId = Auth::guard('web')->user()->id;
 
         $pedidos = DB::table('pedidos as p')
-        ->leftJoin('users as u', 'u.id', '=', 'p.id_usuario')
-        ->leftJoin('ubigeos as ub', 'ub.id_ubigeo', '=', 'p.ubigeo_envio')
-        ->leftJoin('pedido_seguimiento as ps', 'ps.id_pedido', '=', 'p.id_pedido')
-        ->leftJoin('metodo_pagos as m', 'm.id_metodo_pago', '=', 'p.id_metodo_pago') // relacionar con tu columna
-        ->leftJoin(DB::raw('(SELECT pd.id_pedido, GROUP_CONCAT(CONCAT(prod.descripcion, " (", pd.cantidad, ")")) as productos
-                            FROM pedidos_detalle pd
-                            JOIN productos prod ON pd.id_producto = prod.id_producto
-                            GROUP BY pd.id_pedido) as pdp'), 'pdp.id_pedido', '=', 'p.id_pedido')
-        ->where('p.id_usuario', $userId)
-        ->select(
-            'p.id_pedido',
-            'p.codigo_pedido',
-            'p.tipo_pedido',
-            'm.descripcion as metodo_pago', // <-- aquí tomas la descripción del método de pago
-            'p.nombre_cliente as cliente',
-            'p.telefono_cliente',
-            'p.direccion_cliente',
-            'p.observacion as referencia',
-            'p.direccion_envio',
-            'ps.motorizado',
-            'p.fecha_pedido',
-            'p.fecha_entrega',
-            'p.total',
-            'p.estado_pedido',
-            'p.observacion',
-            'p.created_at',
-            'u.nombres as nombre_usuario',
-            'u.email as email_usuario',
-            'u.telefono as telefono_usuario',
-            'ub.departamento',
-            'ub.provincia',
-            'ub.distrito',
-            'ps.comentario',
-            'ps.pendiente',
-            'ps.confirmado',
-            'ps.validado',
-            'ps.anulado',
-            'ps.por_preparar',
-            'ps.entregado',
-            'pdp.productos'
-        )
-        ->orderByDesc('p.created_at')
-        ->get();
-
+            ->leftJoin('users as u', 'u.id', '=', 'p.id_usuario')
+            ->leftJoin('ubigeos as ub', 'ub.id_ubigeo', '=', 'p.ubigeo_envio')
+            ->leftJoin(DB::raw('(SELECT pd.id_pedido, GROUP_CONCAT(CONCAT(prod.descripcion, " (", pd.cantidad, ")")) as productos
+                                FROM pedidos_detalle pd
+                                JOIN productos prod ON pd.id_producto = prod.id_producto
+                                GROUP BY pd.id_pedido) as pdp'), 'pdp.id_pedido', '=', 'p.id_pedido')
+            ->where('p.id_usuario', $userId)
+            ->where('p.estado_pedido', 'pendiente') // <-- FILTRO SOLO PENDIENTES
+            ->select(
+                'p.id_pedido',
+                'p.codigo_pedido',
+                'p.fecha_pedido',
+                'p.total',
+                'u.nombres as nombre_usuario',
+                'ub.departamento',
+                'ub.provincia',
+                'ub.distrito',
+                'pdp.productos'
+            )
+            ->orderByDesc('p.created_at')
+            ->get();
 
         return response()->json(['data' => $pedidos]);
     }
 
-   // Obtener un pedido con detalle + seguimiento
-    public function gestionGet(Request $request)
-    {
-        $id_pedido = $request->id_pedido;
 
+
+
+ public function gestionGet(Request $request)
+    {
         $pedido = DB::table('pedidos as p')
-            ->leftJoin('ubigeos as u', 'p.ubigeo_envio', '=', 'u.id_ubigeo')
-            ->leftJoin('users as us', 'p.id_usuario', '=', 'us.id')
-            ->leftJoin('metodo_pagos as m', 'p.id_metodo_pago', '=', 'm.id_metodo_pago')
-            ->where('p.id_pedido', $id_pedido)
+            ->leftJoin('users as u', 'u.id', '=', 'p.id_usuario')
+            ->leftJoin('ubigeos as ub', 'ub.id_ubigeo', '=', 'p.ubigeo_envio')
+            ->where('p.id_pedido', $request->id_pedido)
             ->select(
                 'p.id_pedido',
-                'p.nombre_cliente',
-                'p.direccion_cliente',
-                'p.telefono_cliente',
-                'p.fecha_pedido',
-                'p.fecha_entrega',
-                'm.descripcion as metodo_pago',
                 'p.codigo_pedido',
-                'p.tipo_pedido',
-                'p.direccion_envio',
-                'p.ubigeo_envio',
-                'u.departamento',
-                'u.provincia',
-                'u.distrito',
-                'p.subtotal',
-                'p.igv',
+                'p.nombre_cliente as cliente',
                 'p.total',
-                'p.observacion',
-                'us.nombres as nombre_usuario',
-                'us.email as email_usuario',
-                'us.telefono as telefono_usuario',
-                'us.direccion as direccion_usuario',
-                'us.ecommerce_nombre as ecommerce'
+                'p.fecha_pedido',
+                'u.nombres as nombre_usuario',
+                'u.email as email_usuario',
+                'u.telefono as telefono_usuario',
+                'ub.departamento',
+                'ub.provincia',
+                'ub.distrito'
             )
             ->first();
 
-        if (!$pedido) {
-            return response()->json(['success' => false, 'message' => 'Pedido no encontrado']);
-        }
+        // Último seguimiento (solo info necesaria)
+        $seguimiento = DB::table('pedido_seguimiento')
+            ->where('id_pedido', $request->id_pedido)
+            ->orderByDesc('id_seguimiento')
+            ->first(['id_seguimiento','id_estado_seguimiento','id_motorizado','comentario']);
 
+        // Detalles de productos (agregando código y opcionalmente imagen)
         $detalles = DB::table('pedidos_detalle as pd')
-            ->join('productos as p', 'pd.id_producto', '=', 'p.id_producto')
-            ->where('pd.id_pedido', $id_pedido)
+            ->join('productos as prod', 'prod.id_producto', '=', 'pd.id_producto')
+            ->where('pd.id_pedido', $request->id_pedido)
             ->select(
-                'pd.id_detalle',
-                'pd.id_pedido',
-                'pd.id_producto',
-                'p.descripcion',
+                'prod.id_producto',
+                'prod.codigo_producto',
+                'prod.descripcion',
+                'prod.imagen', // si quieres mostrar imagen en el detalle
                 'pd.cantidad',
-                'pd.precio_unitario',
-                'pd.total'
+                'pd.precio_unitario' // si quieres subtotal
             )
             ->get();
 
-        $seguimiento = DB::table('pedido_seguimiento')
-            ->where('id_pedido', $id_pedido)
-            ->first();
-
         return response()->json([
-            'success' => true,
             'data' => [
                 'id_pedido' => $pedido->id_pedido,
-                'nombre_cliente' => $pedido->nombre_cliente,
-                'direccion_cliente' => $pedido->direccion_cliente,
-                'telefono_cliente' => $pedido->telefono_cliente,
-                'fecha_pedido' => $pedido->fecha_pedido,
-                'fecha_entrega' => $pedido->fecha_entrega,
                 'codigo_pedido' => $pedido->codigo_pedido,
-                'metodo_pago' => $pedido->metodo_pago,
-                'tipo_pedido' => $pedido->tipo_pedido,
-                'direccion_envio' => $pedido->direccion_envio,
-                'ubigeo_envio' => $pedido->ubigeo_envio,
+                'cliente' => $pedido->cliente,
                 'departamento' => $pedido->departamento,
                 'provincia' => $pedido->provincia,
                 'distrito' => $pedido->distrito,
-                'subtotal' => $pedido->subtotal,
-                'igv' => $pedido->igv,
                 'total' => $pedido->total,
-                'observacion' => $pedido->observacion,
-                'nombre_usuario' => $pedido->nombre_usuario,
-                'email_usuario' => $pedido->email_usuario,
-                'telefono_usuario' => $pedido->telefono_usuario,
-                'direccion_usuario' => $pedido->direccion_usuario,
-                'ecommerce' => $pedido->ecommerce,
-                'detalles' => $detalles,
-                'seguimiento' => $seguimiento
+                'fecha_pedido' => $pedido->fecha_pedido,
+                'seguimiento' => $seguimiento,
+                'detalles' => $detalles
             ]
         ]);
     }
 
 
-    public function gestionUpdate(Request $request)
+
+   public function gestionUpdate(Request $request)
     {
-        $id_pedido = $request->id_pedido;
+        DB::beginTransaction();
+        try {
+            $userId = Auth::guard('web')->user()->id;
 
-        // Estados enviados desde el form (pueden ser varios)
-        $estadosMarcados = $request->estado ?? [];
+            // 1. Registrar seguimiento del pedido
+            $idSeguimiento = DB::table('pedido_seguimiento')->insertGetId([
+                'id_pedido' => $request->id_pedido,
+                'id_estado_seguimiento' => $request->id_estado_seguimiento,
+                'id_motorizado' => $request->id_motorizado,
+                'id_usuario_registro' => $userId,
+                'comentario' => $request->comentario,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
 
-        // Preparamos todos los estados posibles
-        $estados = [
-            'pendiente'     => in_array('pendiente', $estadosMarcados) ? 1 : 0,
-            'confirmado'    => in_array('confirmado', $estadosMarcados) ? 1 : 0,
-            'validado'      => in_array('validado', $estadosMarcados) ? 1 : 0,
-            'por_preparar'  => in_array('por_preparar', $estadosMarcados) ? 1 : 0,
-            'entregado'     => in_array('entregado', $estadosMarcados) ? 1 : 0,
-            'anulado'       => in_array('anulado', $estadosMarcados) ? 1 : 0,
-        ];
+            // 2. Kardex de SALIDA y actualización de stock
+            $detalles = DB::table('pedidos_detalle')
+                ->where('id_pedido', $request->id_pedido)
+                ->get();
 
-        // Guardamos el estado más reciente (para estado_entrega)
-        $estadoEntrega = end($estadosMarcados) ?: null;
+            foreach ($detalles as $item) {
+                // stock actual con lock
+                $producto = DB::table('productos')
+                    ->where('id_producto', $item->id_producto)
+                    ->lockForUpdate()
+                    ->first();
 
-        // Buscar seguimiento actual
-        $seguimiento = DB::table('pedido_seguimiento')->where('id_pedido', $id_pedido)->first();
+                $stockAnterior = $producto->stock;
+                $stockNuevo = $stockAnterior - $item->cantidad; // SALIDA
 
-        // Manejo de evidencias
-        $paths = [];
-        if ($request->hasFile('evidencias')) {
-            foreach ($request->file('evidencias') as $file) {
-                $path = $file->store("public/evidencias/{$id_pedido}");
-                $paths[] = Storage::url($path);
+                if ($stockNuevo < 0) {
+                    throw new \Exception("Stock insuficiente para el producto: {$item->descripcion}");
+                }
+
+                // kardex (SALIDA)
+                DB::table('kardex')->insert([
+                    'id_producto' => $item->id_producto,
+                    'fecha_movimiento' => now(),
+                    'tipo_movimiento' => 'S', // S de Salida
+                    'motivo' => 'DESPACHO PEDIDO',
+                    'id_origen' => $request->id_pedido,
+                    'cantidad' => $item->cantidad,
+                    'stock_anterior' => $stockAnterior,
+                    'stock_nuevo' => $stockNuevo,
+                    'costo_unitario' => $item->precio_unitario ?? 0,
+                    'costo_total' => ($item->precio_unitario ?? 0) * $item->cantidad
+                ]);
+
+                // actualizar stock del producto
+                DB::table('productos')
+                    ->where('id_producto', $item->id_producto)
+                    ->update(['stock' => $stockNuevo]);
             }
+
+            // 3. Actualizar estado del pedido a 'VALIDADO' o 'DESPACHADO'
+            DB::table('pedidos')
+                ->where('id_pedido', $request->id_pedido)
+                ->update(['estado_pedido' => 'VALIDADO', 'updated_at' => now()]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pedido validado y despachado correctamente. Kardex actualizado.'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Ocurrió un error al despachar el pedido.',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        if ($seguimiento && !empty($seguimiento->evidencias_json)) {
-            $anteriores = json_decode($seguimiento->evidencias_json, true);
-            if (is_array($anteriores)) {
-                $paths = array_merge($anteriores, $paths);
-            }
-        }
-
-        $data = array_merge($estados, [
-            'estado_entrega' => $estadoEntrega,
-            'comentario'     => $request->comentario,
-            'motorizado'     => $request->motorizado,
-            'evidencias_json'=> json_encode($paths, JSON_UNESCAPED_SLASHES),
-            'updated_at'     => now()
-        ]);
-
-        if ($seguimiento) {
-            DB::table('pedido_seguimiento')
-                ->where('id_pedido', $id_pedido)
-                ->update($data);
-        } else {
-            $data['id_pedido'] = $id_pedido;
-            $data['created_at'] = now();
-            DB::table('pedido_seguimiento')->insert($data);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Seguimiento actualizado correctamente'
-        ]);
     }
+
+
 
 
 

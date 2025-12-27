@@ -9,18 +9,22 @@ function actualizarTotales() {
     let subtotal = 0;
 
     $("#detalle-compra tbody tr").each(function () {
-        const total = parseFloat($(this).find(".total-item").text()) || 0;
-        subtotal += total;
+        const totalItem = parseFloat($(this).find(".total-item").text()) || 0;
+        subtotal += totalItem;
     });
 
     const igv = subtotal * 0.18;
     const total = subtotal + igv;
 
+    // Mostrar en pantalla
     $("#subtotal").text(subtotal.toFixed(2));
     $("#igv").text(igv.toFixed(2));
     $("#total").text(total.toFixed(2));
 
-    $("#totalCompra").val(total.toFixed(2));
+    // Enviar al backend (inputs hidden que YA agregaste)
+    $("#input-subtotal").val(subtotal.toFixed(2));
+    $("#input-igv").val(igv.toFixed(2));
+    $("#input-total").val(total.toFixed(2));
 }
 
 // ===============================
@@ -34,6 +38,11 @@ $(document).on("click", ".btn-add", function () {
     const cantidad = parseFloat(card.find(".cantidad").val());
     const costo = parseFloat(card.find(".costo").val());
 
+    if (!cantidad || cantidad <= 0) {
+        alert("Cantidad inválida");
+        return;
+    }
+
     if (!costo || costo <= 0) {
         alert("Ingrese costo válido");
         return;
@@ -41,17 +50,30 @@ $(document).on("click", ".btn-add", function () {
 
     const filaExistente = $("#detalle-compra tbody tr[data-id='" + id + "']");
 
+    // ===============================
+    // SI EL PRODUCTO YA EXISTE
+    // ===============================
     if (filaExistente.length > 0) {
 
-        let nuevaCantidad = parseFloat(filaExistente.find(".cant-item").text()) + cantidad;
-        filaExistente.find(".cant-item").text(nuevaCantidad);
-        filaExistente.find(".total-item").text((nuevaCantidad * costo).toFixed(2));
+        const cantidadActual = parseFloat(filaExistente.find(".cant-item").text());
+        const nuevaCantidad = cantidadActual + cantidad;
+        const nuevoSubtotal = nuevaCantidad * costo;
 
+        filaExistente.find(".cant-item").text(nuevaCantidad);
+        filaExistente.find(".total-item").text(nuevoSubtotal.toFixed(2));
+
+        // actualizar hidden inputs
         filaExistente.find('input[name$="[cantidad]"]').val(nuevaCantidad);
+        filaExistente.find('input[name$="[costo]"]').val(costo);
+        filaExistente.find('input[name$="[subtotal]"]').val(nuevoSubtotal.toFixed(2));
 
     } else {
 
+        // ===============================
+        // NUEVO PRODUCTO
+        // ===============================
         const index = $("#detalle-compra tbody tr").length;
+        const subtotalItem = cantidad * costo;
 
         const fila = `
         <tr data-id="${id}">
@@ -59,11 +81,11 @@ $(document).on("click", ".btn-add", function () {
                 <input type="hidden" name="detalle[${index}][id_producto]" value="${id}">
                 <input type="hidden" name="detalle[${index}][cantidad]" value="${cantidad}">
                 <input type="hidden" name="detalle[${index}][costo]" value="${costo}">
-                <input type="hidden" name="detalle[${index}][subtotal]" value="${(cantidad * costo).toFixed(2)}">
+                <input type="hidden" name="detalle[${index}][subtotal]" value="${subtotalItem.toFixed(2)}">
             </td>
             <td class="cant-item">${cantidad}</td>
             <td>${costo.toFixed(2)}</td>
-            <td class="total-item">${(cantidad * costo).toFixed(2)}</td>
+            <td class="total-item">${subtotalItem.toFixed(2)}</td>
             <td>
                 <button type="button" class="btn btn-danger btn-sm btn-remove">X</button>
             </td>

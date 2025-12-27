@@ -132,34 +132,36 @@
                         @if (Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_DESARROLLADOR ||
                         Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_ADMINISTRADOR ||
                         Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_JEFE)
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true"
-                                aria-expanded="false">
-                                <i class="fa fa-shopping-bag mr-2"></i>
-                                <span>Compras</span>
-                            </a>
-                            <ul class="dropdown-menu multilevel scale-up-left">
-                                <a class="nav-link" href="{{ route('auth.compras.listado') }}">
-                                    <i class="fa fa-list-alt mr-2"></i> Listado de Compras
-                                </a>
-
-                                <li class="nav-item">
-                                    <a class="nav-link" href="{{ route('auth.compras') }}">
-                                        <i class="fa fa-cart-plus mr-2"></i> Generar Compra
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
 
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true"
                                 aria-expanded="false">
                                 <i class="fa fa-archive mr-2"></i>
-                                <span>Kardex</span>
+                                <span>Almacén</span>
                             </a>
                             <ul class="dropdown-menu multilevel scale-up-left">
                                 <li class="nav-item">
-                                    <a class="nav-link" href="">
+                                    <a class="nav-link" href="{{ route('auth.compras.listado') }}">
+                                        <i class="fa fa-list-alt mr-2"></i> Listado de Compras
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('auth.compras') }}">
+                                        <i class="fa fa-cart-plus mr-2"></i> Generar Compra
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('auth.productos') }}">
+                                        <i class="fa fa-cube mr-2"></i> Gestión de Productos
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('auth.pedidos.gestion') }}">
+                                        <i class="fa fa-shopping-cart mr-2"></i> Despacho de Pedidos
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('auth.movimientos') }}">
                                         <i class="fa fa-exchange mr-2"></i> Ver movimientos
                                     </a>
                                 </li>
@@ -186,13 +188,13 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ route('auth.productos') }}">
-                                        <i class="fa fa-cube mr-2"></i> Gestión de Productos
+                                    <a class="nav-link" href="{{ route('auth.marcas') }}">
+                                        <i class="fa fa-tags mr-2"></i> Gestión de Marcas
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ route('auth.pedidos.gestion') }}">
-                                        <i class="fa fa-shopping-cart mr-2"></i> Gestión de Pedidos
+                                    <a class="nav-link" href="{{ route('auth.proveedores') }}">
+                                        <i class="fa fa-truck mr-2"></i> Gestión de Proveedores
                                     </a>
                                 </li>
                             </ul>

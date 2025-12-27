@@ -166,45 +166,29 @@ $(document).ready(function() {
             { // Estado seguimiento
                 data: 'estado_seguimiento',
                 name: 'estado_seguimiento',
+                orderable: false,
+                searchable: false,
                 render: function(data, type, row) {
-                    if (!data || data.length === 0)
+                    let estados = Array.isArray(data) ? data : [];
+
+                    if (estados.length === 0)
                         return '<span class="text-muted">Sin estado</span>';
 
+                    // Solo mostrar el texto, capitalizando la primera letra y reemplazando _
                     let html = '';
-                    data.forEach(function(estado) {
-                        let icon = '';
-                        let text = estado.charAt(0).toUpperCase() + estado.slice(1);
-
-                        switch (estado) {
-                            case 'pendiente':
-                                icon = '<i class="fa fa-hourglass-start"></i>';
-                                break;
-                            case 'confirmado':
-                                icon = '<i class="fa fa-phone"></i>';
-                                break;
-                            case 'validado':
-                                icon = '<i class="fa fa-check-circle"></i>';
-                                break;
-                            case 'anulado':
-                                icon = '<i class="fa fa-times-circle"></i>';
-                                break;
-                            case 'por_preparar':
-                                icon = '<i class="fa fa-box"></i>';
-                                break;
-                            case 'entregado':
-                                icon = '<i class="fa fa-truck"></i>';
-                                break;
-                            default:
-                                icon = '<i class="fa fa-question-circle"></i>';
-                        }
-
+                    estados.forEach(function(estado) {
+                        let text = estado.replace(/_/g, ' ');
+                        text = text.charAt(0).toUpperCase() + text.slice(1);
                         html +=
-                            `<div class="estado-pedido ${estado}" style="margin-bottom:4px;">${icon} ${text}</div>`;
+                            `<div class="estado-pedido" style="margin-bottom:4px;">${text}</div>`;
                     });
 
                     return html;
                 }
             }
+
+
+
         ],
         order: [
             [1, 'desc']

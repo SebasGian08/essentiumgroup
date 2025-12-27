@@ -15,9 +15,9 @@
 
     {{-- HEADER --}}
     <section class="content-header d-flex justify-content-between align-items-center header-animado"
-        style="padding:15px 25px; background:linear-gradient(to right,#2c7be5,#5e9cff); border-radius:8px;">
-        <h1 style="color:#fff;">
-            <i class="fa fa-truck-loading"></i> Registrar Compra
+        style="padding: 15px 25px; border-bottom: 2px solid #e0e0e0; background: linear-gradient(to right, #5864ff, #646eff); border-radius: 8px;">
+        <h1 style="font-family: 'Poppins', sans-serif; font-weight: 600; color: #fff; margin: 0; font-size: 1.8rem;">
+            <i class="fa fa-shopping-cart" style="margin-right: 8px;"></i> Registrar Compra
         </h1>
     </section>
 
@@ -148,6 +148,10 @@
                             <p>Subtotal: S/ <span id="subtotal">0.00</span></p>
                             <p>IGV (18%): S/ <span id="igv">0.00</span></p>
                             <p><strong>Total: S/ <span id="total">0.00</span></strong></p>
+                            <input type="hidden" name="subtotal" id="input-subtotal">
+                            <input type="hidden" name="igv" id="input-igv">
+                            <input type="hidden" name="total" id="input-total">
+
                         </div>
                     </div>
                 </div>

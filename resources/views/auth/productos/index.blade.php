@@ -1,7 +1,7 @@
 @extends('auth.index')
 
 @section('titulo')
-<title>Registro de Usuarios</title>
+<title>Registro de Productos</title>
 @endsection
 
 @section('styles')
