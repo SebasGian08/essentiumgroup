@@ -102,6 +102,35 @@ Route::group(['prefix' => 'auth', 'middleware' => 'auth:web'], function () {
         Route::get('list_all', 'Auth\ProveedorController@list')->name('auth.proveedores.list_all');
         Route::post('delete', 'Auth\ProveedorController@delete')->name('auth.proveedores.delete');
     });
+
+    Route::group(['prefix' => 'reportes'], function () {
+
+        Route::get('/', 'Auth\ReportesController@index')
+            ->name('auth.reportes');
+
+        Route::get('/rotacion', 'Auth\ReportesController@rotacionInventario')
+            ->name('auth.reportes.rotacion');
+
+        Route::get('/stock-critico', 'Auth\ReportesController@stockCritico')
+            ->name('auth.reportes.stock');
+
+        Route::get('/kardex', 'Auth\ReportesController@kardexValorizado')
+            ->name('auth.reportes.kardex');
+
+        Route::get('/margen', 'Auth\ReportesController@margenProducto')
+            ->name('auth.reportes.margen');
+
+        Route::get('/excel/{tipo}', 'Auth\ReportesController@exportarExcel')
+            ->name('auth.reportes.excel');
+    });
+
+
+
+
+
+
+
+
 });
 
 //Pagina principal

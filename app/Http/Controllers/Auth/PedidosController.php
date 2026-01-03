@@ -163,7 +163,7 @@ class PedidosController extends Controller
                 'total' => $total,
                 'observacion' => $request->referencia,
                 'estado' => 1,
-                'estado_pedido' => 'pendiente',
+                'estado_pedido' => 'PENDIENTE',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -319,7 +319,7 @@ class PedidosController extends Controller
                                 JOIN productos prod ON pd.id_producto = prod.id_producto
                                 GROUP BY pd.id_pedido) as pdp'), 'pdp.id_pedido', '=', 'p.id_pedido')
             ->where('p.id_usuario', $userId)
-            ->where('p.estado_pedido', 'pendiente') // <-- FILTRO SOLO PENDIENTES
+            ->where('p.estado_pedido', 'PENDIENTE') // <-- FILTRO SOLO PENDIENTES
             ->select(
                 'p.id_pedido',
                 'p.codigo_pedido',

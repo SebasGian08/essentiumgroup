@@ -168,7 +168,7 @@
                             </ul>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="">
+                            <a class="nav-link" href="{{ route('auth.reportes') }}">
                                 <i class="fa fa-bar-chart mr-2"></i>
                                 <span>Reportes</span>
                             </a>
