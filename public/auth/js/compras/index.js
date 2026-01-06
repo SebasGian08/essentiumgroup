@@ -1,157 +1,159 @@
-const productos = $(".producto-card");
-let paginaActual = 1;
-const productosPorPagina = 6;
-
-// ===============================
-// TOTALES
-// ===============================
-function actualizarTotales() {
-    let subtotal = 0;
-
-    $("#detalle-compra tbody tr").each(function () {
-        const totalItem = parseFloat($(this).find(".total-item").text()) || 0;
-        subtotal += totalItem;
-    });
-
-    const igv = subtotal * 0.18;
-    const total = subtotal + igv;
-
-    // Mostrar en pantalla
-    $("#subtotal").text(subtotal.toFixed(2));
-    $("#igv").text(igv.toFixed(2));
-    $("#total").text(total.toFixed(2));
-
-    // Enviar al backend (inputs hidden que YA agregaste)
-    $("#input-subtotal").val(subtotal.toFixed(2));
-    $("#input-igv").val(igv.toFixed(2));
-    $("#input-total").val(total.toFixed(2));
-}
-
-// ===============================
-// AGREGAR PRODUCTO
-// ===============================
-$(document).on("click", ".btn-add", function () {
-
-    const card = $(this).closest(".producto-card");
-    const id = card.data("id");
-    const nombre = card.data("nombre");
-    const cantidad = parseFloat(card.find(".cantidad").val());
-    const costo = parseFloat(card.find(".costo").val());
-
-    if (!cantidad || cantidad <= 0) {
-        alert("Cantidad inválida");
-        return;
-    }
-
-    if (!costo || costo <= 0) {
-        alert("Ingrese costo válido");
-        return;
-    }
-
-    const filaExistente = $("#detalle-compra tbody tr[data-id='" + id + "']");
+$(document).ready(function () {
 
     // ===============================
-    // SI EL PRODUCTO YA EXISTE
+    // VARIABLES
     // ===============================
-    if (filaExistente.length > 0) {
+    const productos = $(".producto-card");
+    let productosFiltrados = productos;
+    let paginaActual = 1;
+    const productosPorPagina = 8;
 
-        const cantidadActual = parseFloat(filaExistente.find(".cant-item").text());
-        const nuevaCantidad = cantidadActual + cantidad;
-        const nuevoSubtotal = nuevaCantidad * costo;
+    // ===============================
+    // TOTALES
+    // ===============================
+    function actualizarTotales() {
+        let subtotal = 0;
 
-        filaExistente.find(".cant-item").text(nuevaCantidad);
-        filaExistente.find(".total-item").text(nuevoSubtotal.toFixed(2));
+        $("#detalle-compra tbody tr").each(function () {
+            const totalItem = parseFloat($(this).find(".total-item").text()) || 0;
+            subtotal += totalItem;
+        });
 
-        // actualizar hidden inputs
-        filaExistente.find('input[name$="[cantidad]"]').val(nuevaCantidad);
-        filaExistente.find('input[name$="[costo]"]').val(costo);
-        filaExistente.find('input[name$="[subtotal]"]').val(nuevoSubtotal.toFixed(2));
+        const igv = subtotal * 0.18;
+        const total = subtotal + igv;
 
-    } else {
+        $("#subtotal").text(subtotal.toFixed(2));
+        $("#igv").text(igv.toFixed(2));
+        $("#total").text(total.toFixed(2));
 
-        // ===============================
-        // NUEVO PRODUCTO
-        // ===============================
-        const index = $("#detalle-compra tbody tr").length;
-        const subtotalItem = cantidad * costo;
-
-        const fila = `
-        <tr data-id="${id}">
-            <td>${nombre}
-                <input type="hidden" name="detalle[${index}][id_producto]" value="${id}">
-                <input type="hidden" name="detalle[${index}][cantidad]" value="${cantidad}">
-                <input type="hidden" name="detalle[${index}][costo]" value="${costo}">
-                <input type="hidden" name="detalle[${index}][subtotal]" value="${subtotalItem.toFixed(2)}">
-            </td>
-            <td class="cant-item">${cantidad}</td>
-            <td>${costo.toFixed(2)}</td>
-            <td class="total-item">${subtotalItem.toFixed(2)}</td>
-            <td>
-                <button type="button" class="btn btn-danger btn-sm btn-remove">X</button>
-            </td>
-        </tr>`;
-
-        $("#detalle-compra tbody").append(fila);
+        $("#input-subtotal").val(subtotal.toFixed(2));
+        $("#input-igv").val(igv.toFixed(2));
+        $("#input-total").val(total.toFixed(2));
     }
 
-    actualizarTotales();
-});
+    // ===============================
+    // AGREGAR PRODUCTO
+    // ===============================
+    $(document).on("click", ".btn-add", function () {
 
-// ===============================
-// ELIMINAR ITEM
-// ===============================
-$(document).on("click", ".btn-remove", function () {
-    $(this).closest("tr").remove();
-    actualizarTotales();
-});
+        const card = $(this).closest(".producto-card");
+        const id = card.data("id");
+        const nombre = card.data("nombre");
+        const cantidad = parseFloat(card.find(".cantidad").val());
+        const costo = parseFloat(card.find(".costo").val());
 
-// ===============================
-// PAGINACIÓN
-// ===============================
-function mostrarPagina(page, listaProductos = null) {
+        if (!cantidad || cantidad <= 0) {
+            alert("Cantidad inválida");
+            return;
+        }
 
-    const lista = listaProductos || $(".producto-card");
-    lista.hide();
+        if (!costo || costo <= 0) {
+            alert("Ingrese costo válido");
+            return;
+        }
 
-    const start = (page - 1) * productosPorPagina;
-    const end = start + productosPorPagina;
-    lista.slice(start, end).show();
+        const filaExistente = $("#detalle-compra tbody tr[data-id='" + id + "']");
 
-    const totalPaginas = Math.ceil(lista.length / productosPorPagina);
-    $("#pageInfo").text(`Página ${page} de ${totalPaginas}`);
-}
+        if (filaExistente.length > 0) {
 
-// Inicial
-mostrarPagina(paginaActual);
+            const cantidadActual = parseFloat(filaExistente.find(".cant-item").text());
+            const nuevaCantidad = cantidadActual + cantidad;
+            const nuevoSubtotal = nuevaCantidad * costo;
 
-// Botones
-$("#prevPage").on("click", function () {
-    if (paginaActual > 1) {
-        paginaActual--;
-        mostrarPagina(paginaActual, $(".producto-card:visible"));
-    }
-});
+            filaExistente.find(".cant-item").text(nuevaCantidad);
+            filaExistente.find(".total-item").text(nuevoSubtotal.toFixed(2));
 
-$("#nextPage").on("click", function () {
-    const visibles = $(".producto-card:visible");
-    const totalPaginas = Math.ceil(visibles.length / productosPorPagina);
-    if (paginaActual < totalPaginas) {
-        paginaActual++;
-        mostrarPagina(paginaActual, visibles);
-    }
-});
+            filaExistente.find('input[name$="[cantidad]"]').val(nuevaCantidad);
+            filaExistente.find('input[name$="[costo]"]').val(costo);
+            filaExistente.find('input[name$="[subtotal]"]').val(nuevoSubtotal.toFixed(2));
 
-// ===============================
-// BUSCADOR
-// ===============================
-$("#buscarProducto").on("keyup", function () {
-    const busqueda = $(this).val().toLowerCase();
+        } else {
 
-    $(".producto-card").each(function () {
-        const nombre = $(this).data("nombre").toLowerCase();
-        $(this).toggle(nombre.includes(busqueda));
+            const index = $("#detalle-compra tbody tr").length;
+            const subtotalItem = cantidad * costo;
+
+            const fila = `
+                <tr data-id="${id}">
+                    <td>
+                        ${nombre}
+                        <input type="hidden" name="detalle[${index}][id_producto]" value="${id}">
+                        <input type="hidden" name="detalle[${index}][cantidad]" value="${cantidad}">
+                        <input type="hidden" name="detalle[${index}][costo]" value="${costo}">
+                        <input type="hidden" name="detalle[${index}][subtotal]" value="${subtotalItem.toFixed(2)}">
+                    </td>
+                    <td class="cant-item">${cantidad}</td>
+                    <td>${costo.toFixed(2)}</td>
+                    <td class="total-item">${subtotalItem.toFixed(2)}</td>
+                    <td>
+                        <button type="button" class="btn btn-danger btn-sm btn-remove">X</button>
+                    </td>
+                </tr>
+            `;
+
+            $("#detalle-compra tbody").append(fila);
+        }
+
+        actualizarTotales();
     });
 
-    paginaActual = 1;
-    mostrarPagina(paginaActual, $(".producto-card:visible"));
+    // ===============================
+    // ELIMINAR PRODUCTO
+    // ===============================
+    $(document).on("click", ".btn-remove", function () {
+        $(this).closest("tr").remove();
+        actualizarTotales();
+    });
+
+    // ===============================
+    // PAGINACIÓN (CORRECTA)
+    // ===============================
+    function mostrarPagina(page) {
+
+        productosFiltrados.hide();
+
+        const start = (page - 1) * productosPorPagina;
+        const end = start + productosPorPagina;
+
+        productosFiltrados.slice(start, end).show();
+
+        const totalPaginas = Math.ceil(productosFiltrados.length / productosPorPagina);
+        $("#pageInfo").text(`Página ${page} de ${totalPaginas}`);
+    }
+
+    // Inicial
+    mostrarPagina(paginaActual);
+
+    // ===============================
+    // BOTONES PAGINACIÓN
+    // ===============================
+    $("#prevPage").on("click", function () {
+        if (paginaActual > 1) {
+            paginaActual--;
+            mostrarPagina(paginaActual);
+        }
+    });
+
+    $("#nextPage").on("click", function () {
+        const totalPaginas = Math.ceil(productosFiltrados.length / productosPorPagina);
+        if (paginaActual < totalPaginas) {
+            paginaActual++;
+            mostrarPagina(paginaActual);
+        }
+    });
+
+    // ===============================
+    // BUSCADOR
+    // ===============================
+    $("#buscarProducto").on("keyup", function () {
+
+        const busqueda = $(this).val().toLowerCase();
+
+        productosFiltrados = $(".producto-card").filter(function () {
+            return $(this).data("nombre").toLowerCase().includes(busqueda);
+        });
+
+        paginaActual = 1;
+        mostrarPagina(paginaActual);
+    });
+
 });
