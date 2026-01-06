@@ -1,9 +1,8 @@
 const productos = $(".producto-card");
+let productosFiltrados = productos; // 👈 MUY IMPORTANTE
 let paginaActual = 1;
-const productosPorPagina = 6;
-const totalPaginas = Math.ceil(productos.length / productosPorPagina);
+const productosPorPagina = 8;
 
-// ✅ Inicializar Select2 al cargar
 function initSelect2() {
     $('.producto-select').select2({
         placeholder: "Buscar producto...",
@@ -67,16 +66,18 @@ $(document).on("click", ".btn-add", function () {
 });
 
 
-function mostrarPagina(page, listaProductos = null) {
-    const lista = listaProductos || $(".producto-card"); // usar filtrados si vienen
-    lista.hide();
+function mostrarPagina(page) {
+    productosFiltrados.hide();
+
     const start = (page - 1) * productosPorPagina;
     const end = start + productosPorPagina;
-    lista.slice(start, end).show();
 
-    const totalPaginas = Math.ceil(lista.length / productosPorPagina);
+    productosFiltrados.slice(start, end).show();
+
+    const totalPaginas = Math.ceil(productosFiltrados.length / productosPorPagina);
     $("#pageInfo").text(`Página ${page} de ${totalPaginas}`);
 }
+
 
 // Inicializar primera página
 mostrarPagina(paginaActual);
@@ -85,33 +86,31 @@ mostrarPagina(paginaActual);
 $("#prevPage").on("click", function () {
     if (paginaActual > 1) {
         paginaActual--;
-        const visibles = $(".producto-card:visible");
-        mostrarPagina(paginaActual, visibles);
+        mostrarPagina(paginaActual);
     }
 });
 
 $("#nextPage").on("click", function () {
-    const visibles = $(".producto-card:visible");
-    const totalPaginas = Math.ceil(visibles.length / productosPorPagina);
+    const totalPaginas = Math.ceil(productosFiltrados.length / productosPorPagina);
     if (paginaActual < totalPaginas) {
         paginaActual++;
-        mostrarPagina(paginaActual, visibles);
+        mostrarPagina(paginaActual);
     }
 });
+
 
 // Buscador
 $("#buscarProducto").on("keyup", function () {
     const busqueda = $(this).val().toLowerCase();
-    $(".producto-card").each(function () {
-        const nombre = $(this).data("nombre").toLowerCase();
-        $(this).toggle(nombre.includes(busqueda));
+
+    productosFiltrados = $(".producto-card").filter(function () {
+        return $(this).data("nombre").toLowerCase().includes(busqueda);
     });
 
-    // Reiniciar paginación al buscar
     paginaActual = 1;
-    const visibles = $(".producto-card:visible");
-    mostrarPagina(paginaActual, visibles);
+    mostrarPagina(paginaActual);
 });
+
 
 // Eliminar fila
 $(document).on("click", ".btn-remove", function () {
