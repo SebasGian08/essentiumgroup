@@ -130,7 +130,7 @@
 $(function() {
     $('#tableMotorizado').DataTable({
         ajax: {
-            url: "{{ route('auth.pedidos.gestion_list') }}",
+            url: "{{ route('auth.motorizado.list') }}",
             dataSrc: 'data'
         },
         columns: [{

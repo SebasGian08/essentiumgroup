@@ -131,7 +131,7 @@ Route::group(['prefix' => 'auth', 'middleware' => 'auth:web'], function () {
 
     Route::group(['prefix' => 'motorizado'], function(){
         Route::get('', 'Auth\MotorizadoController@index')->name('auth.pedidos.motorizado');
-        Route::get('list', 'Auth\MotorizadoController@list')->name('auth.pedidos.motorizado.list');
+        Route::get('list', 'Auth\MotorizadoController@list')->name('auth.motorizado.list');
         Route::get('get', 'Auth\MotorizadoController@get')->name('auth.pedidos.motorizado.get');
         Route::post('update', 'Auth\MotorizadoController@update')->name('auth.pedidos.motorizado.update');
         

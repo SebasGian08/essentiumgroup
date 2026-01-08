@@ -22,12 +22,16 @@ class MotorizadoController extends Controller
         $userId = Auth::guard('web')->user()->id;
 
         $pedidos = DB::table('pedidos as p')
+            // Subconsulta para concatenar productos
             ->leftJoin(DB::raw('(SELECT pd.id_pedido, GROUP_CONCAT(CONCAT(prod.descripcion, " (", pd.cantidad, ")")) as productos
                                 FROM pedidos_detalle pd
                                 JOIN productos prod ON pd.id_producto = prod.id_producto
                                 GROUP BY pd.id_pedido) as pdp'), 'pdp.id_pedido', '=', 'p.id_pedido')
+            // Unir con seguimiento para filtrar por motorizado
+            ->join('pedido_seguimiento as ps', 'ps.id_pedido', '=', 'p.id_pedido')
             ->where('p.estado', 1)
-            ->where('p.estado_pedido', 'VALIDADO') // pedidos válidos asignados
+            ->whereRaw("TRIM(UPPER(p.estado_pedido)) = ?", ['VALIDADO'])
+            //->where('ps.id_motorizado', $userId)
             ->select(
                 'p.id_pedido',
                 'p.codigo_pedido',
@@ -45,7 +49,6 @@ class MotorizadoController extends Controller
             ->orderByDesc('p.created_at')
             ->get()
             ->map(function($pedido){
-                // Convertir productos a array
                 $pedido->productos = collect(explode(',', $pedido->productos ?? ''))
                     ->map(function($p){
                         preg_match('/^(.*)\s\((\d+)\)$/', trim($p), $m);
@@ -59,6 +62,7 @@ class MotorizadoController extends Controller
 
         return response()->json(['data' => $pedidos]);
     }
+
 
     // Obtener detalle de un pedido para editar
     public function get(Request $request)
