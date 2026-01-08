@@ -90,12 +90,23 @@ Route::group(['prefix' => 'auth', 'middleware' => 'auth:web'], function () {
     });
     /* MARCAS */
     Route::group(['prefix' => 'marcas'], function () {
-        Route::get('', 'Auth\MarcasController@index')->name('auth.marcas'); // Vista principal
-        Route::post('/store', 'Auth\MarcasController@store')->name('auth.marcas.store'); // Guardar marca
-        Route::get('/list_all', 'Auth\MarcasController@list')->name('auth.marcas.list_all'); // JSON para DataTable
-        Route::post('/delete', 'Auth\MarcasController@delete')->name('auth.marcas.delete'); // Eliminar marca
-        Route::get('/partialView/{id}', 'Auth\MarcasController@partialView')->name('auth.marcas.create'); // Formulario parcial para editar/crear
+
+        Route::get('', 'Auth\MarcasController@index')
+            ->name('auth.marcas');
+
+        Route::get('/list_all', 'Auth\MarcasController@list')
+            ->name('auth.marcas.list_all');
+
+        Route::post('/store', 'Auth\MarcasController@store')
+            ->name('auth.marcas.store');
+
+        Route::post('/delete', 'Auth\MarcasController@delete')
+            ->name('auth.marcas.delete');
+
+        Route::get('/partialView/{id}', 'Auth\MarcasController@partialView')
+            ->name('auth.marcas.partial');
     });
+
 
     Route::group(['prefix' => 'proveedores'], function () {
         Route::get('', 'Auth\ProveedorController@index')->name('auth.proveedores');
