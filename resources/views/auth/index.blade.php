@@ -211,6 +211,17 @@
                             </ul>
                         </li>
                         @endif
+                        @if (Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_DESARROLLADOR ||
+                        Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_ADMINISTRADOR ||
+                        Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_MOTORIZADO)
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('auth.pedidos.motorizado') }}">
+                                <i class="fa fa-motorcycle mr-2"></i>
+                                <span>Despacho</span>
+                            </a>
+                        </li>
+
+                        @endif
 
                 </div>
             </nav>

@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use PDF;
 
 class PedidosController extends Controller
 {
@@ -477,8 +478,95 @@ class PedidosController extends Controller
         }
     }
 
+    public function descargarGuia($id_pedido)
+    {
+        $pedido = DB::table('pedidos as p')
+            ->leftJoin('users as u', 'u.id', '=', 'p.id_usuario')
+            ->leftJoin('ubigeos as ub', 'ub.id_ubigeo', '=', 'p.ubigeo_envio')
+            ->where('p.id_pedido', $id_pedido)
+            ->select(
+                'p.id_pedido','p.codigo_pedido','p.nombre_cliente','p.direccion_cliente',
+                'p.telefono_cliente','p.fecha_entrega','p.direccion_envio',
+                'ub.departamento','ub.provincia','ub.distrito','p.total'
+            )->first();
 
+        $detalles = DB::table('pedidos_detalle as pd')
+            ->join('productos as prod', 'prod.id_producto', '=', 'pd.id_producto')
+            ->where('pd.id_pedido', $id_pedido)
+            ->select('prod.codigo_producto','prod.descripcion','pd.cantidad','pd.precio_unitario')
+            ->get();
 
+        $pdf = PDF::loadView('auth.pedidos.guia', compact('pedido','detalles'));
+        return $pdf->download("Guia_{$pedido->codigo_pedido}.pdf");
+    }
+
+    public function entregar(Request $request)
+    {
+        $idPedido = $request->id_pedido;
+
+        $pedido = DB::table('pedidos')->where('id_pedido', $idPedido)->first();
+        if (!$pedido) {
+            return response()->json(['message' => 'Pedido no encontrado.'], 404);
+        }
+
+        $detalles = DB::table('pedidos_detalle')->where('id_pedido', $idPedido)->get();
+        if ($detalles->isEmpty()) {
+            return response()->json(['message' => 'El pedido no tiene productos.'], 400);
+        }
+
+        DB::beginTransaction();
+        try {
+            // 1️⃣ Marcar pedido como ENTREGADO
+            DB::table('pedidos')->where('id_pedido', $idPedido)
+                ->update(['estado_pedido' => 'ENTREGADO', 'updated_at' => now()]);
+
+            // 2️⃣ Descontar stock y registrar kardex
+            foreach ($detalles as $d) {
+                $producto = DB::table('productos')->where('id_producto', $d->id_producto)->first();
+                if (!$producto) continue;
+
+                $stockAnterior = $producto->stock;
+                $stockNuevo = $stockAnterior - $d->cantidad;
+
+                DB::table('productos')->where('id_producto', $d->id_producto)
+                    ->update(['stock' => $stockNuevo]);
+
+                DB::table('kardex')->insert([
+                    'id_producto' => $d->id_producto,
+                    'fecha_movimiento' => now(),
+                    'tipo_movimiento' => 'S', // Salida
+                    'motivo' => 'ENTREGA PEDIDO',
+                    'id_origen' => $idPedido,
+                    'cantidad' => $d->cantidad,
+                    'stock_anterior' => $stockAnterior,
+                    'stock_nuevo' => $stockNuevo,
+                    'costo_unitario' => $d->precio_unitario,
+                    'costo_total' => $d->cantidad * $d->precio_unitario,
+                ]);
+            }
+
+            // 3️⃣ Registrar seguimiento ENTREGADO
+            DB::table('pedido_seguimiento')->insert([
+                'id_pedido' => $idPedido,
+                'id_estado_seguimiento' => 6, // ENTREGADO
+                'id_motorizado' => auth()->id(),
+                'id_usuario_registro' => auth()->id(),
+                'comentario' => 'Pedido entregado, stock descontado y registrado en kardex.',
+                'evidencia_entrega' => 1,
+                'evidencia_chat' => 0,
+                'evidencia_llamada_chat' => 0,
+                'evidencia_soporte' => 0,
+                'created_at' => now(),
+            ]);
+
+            DB::commit();
+
+            return response()->json(['message' => 'Pedido entregado correctamente.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Error al entregar pedido: '.$e->getMessage()], 500);
+        }
+    }
 
 
 

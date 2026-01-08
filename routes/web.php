@@ -59,11 +59,12 @@ Route::group(['prefix' => 'auth', 'middleware' => 'auth:web'], function () {
         Route::post('store', 'Auth\PedidosController@store')->name('auth.pedidos.store');
         Route::get('list_all', 'Auth\PedidosController@list_all')->name('auth.pedidos.list_all');
         Route::post('delete', 'Auth\PedidosController@delete')->name('auth.pedidos.delete');
-
         // NUEVAS RUTAS PARA SEGUIMIENTO 1:1
         Route::get('gestion/list', 'Auth\PedidosController@gestionList')->name('auth.pedidos.gestion_list');
         Route::get('gestion/get', 'Auth\PedidosController@gestionGet')->name('auth.pedidos.gestion_get');
         Route::post('gestion/update', 'Auth\PedidosController@gestionUpdate')->name('auth.pedidos.gestion_update');
+        Route::get('{id}/guia', 'Auth\PedidosController@descargarGuia')->name('auth.pedidos.guia');
+        Route::post('entregar', 'Auth\PedidosController@entregar')->name('auth.pedidos.entregar');
     });
 
     /* GESTION DE producto */
@@ -128,6 +129,13 @@ Route::group(['prefix' => 'auth', 'middleware' => 'auth:web'], function () {
         Route::get('/search', 'Auth\ClientesController@search')->name('auth.clientes.search');
     });
 
+    Route::group(['prefix' => 'motorizado'], function(){
+        Route::get('', 'Auth\MotorizadoController@index')->name('auth.pedidos.motorizado');
+        Route::get('list', 'Auth\MotorizadoController@list')->name('auth.pedidos.motorizado.list');
+        Route::get('get', 'Auth\MotorizadoController@get')->name('auth.pedidos.motorizado.get');
+        Route::post('update', 'Auth\MotorizadoController@update')->name('auth.pedidos.motorizado.update');
+        
+    });
 
 
 
