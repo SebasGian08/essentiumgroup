@@ -113,7 +113,7 @@
                             <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true"
                                 aria-expanded="false">
                                 <i class="fa fa-shopping-cart mr-2"></i>
-                                <span>Pedidos</span>
+                                <span>Dropshipping</span>
                             </a>
                             <ul class="dropdown-menu multilevel scale-up-left">
                                 <li class="nav-item">
@@ -124,6 +124,11 @@
                                 <li class="nav-item">
                                     <a class="nav-link" href="{{ route('auth.pedidos') }}">
                                         <i class="fa fa-plus-circle mr-2"></i> Generar Pedido
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('auth.clientes') }}">
+                                        <i class="fa fa-users mr-2"></i> Gestión de Clientes
                                     </a>
                                 </li>
                             </ul>

@@ -50,6 +50,9 @@
                         <label>N° Documento</label>
                         <div class="input-group">
                             <input id="num_doc" class="form-control" placeholder="Ingrese documento" maxlength="11">
+                            <button type="button" id="btnBuscarCliente" class="btn btn-primary">
+                                <i class="fa fa-search"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -205,14 +208,51 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
-$(document).ready(function () {
+$(document).ready(function() {
     $('#ubigeo_envio').select2({
         placeholder: 'Buscar ubigeo...',
         allowClear: true,
         width: '100%'
     });
+    function buscarCliente() {
+        let documento = $('#num_doc').val().trim();
+        if(documento === '') return;
+
+        $.ajax({
+            url: '/auth/clientes/search',
+            method: 'GET',
+            data: { documento: documento },
+            success: function(res) {
+                if(res && res.cliente) {
+                    $('#razonSocial').val(res.cliente.nombres);
+                    $('#direccion').val(res.cliente.direccion);
+                    $('#telefono').val(res.cliente.telefono);
+                    $('#email').val(res.cliente.email);
+                } else {
+                    alert('Cliente no encontrado');
+                    $('#razonSocial, #direccion, #telefono, #email').val('');
+                }
+            },
+            error: function() {
+                alert('Error al buscar cliente');
+            }
+        });
+    }
+
+    // ✅ Botón de buscar
+    $('#btnBuscarCliente').on('click', buscarCliente);
+
+    // ✅ Enter en input de documento
+    $('#num_doc').on('keypress', function(e) {
+        if(e.which === 13) { // Enter
+            e.preventDefault();
+            buscarCliente();
+        }
+    });
 });
+
 </script>
 
 <script type="text/javascript" src="{{ asset('auth/js/pedidos/index.js') }}"></script>
+
 @endsection
