@@ -7,9 +7,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Proveedor extends Model
 {
+    use SoftDeletes;
 
-    protected $table = 'proveedor'; // nombre exacto de la tabla
+    protected $table = 'proveedor';
     protected $primaryKey = 'id_proveedor';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
     protected $fillable = [
         'ruc',
@@ -17,6 +20,6 @@ class Proveedor extends Model
         'direccion',
         'telefono',
         'email',
-        'estado',
+        'estado'
     ];
 }

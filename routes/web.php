@@ -91,28 +91,26 @@ Route::group(['prefix' => 'auth', 'middleware' => 'auth:web'], function () {
     /* MARCAS */
     Route::group(['prefix' => 'marcas'], function () {
 
-        Route::get('', 'Auth\MarcasController@index')
-            ->name('auth.marcas');
+        Route::get('', 'Auth\MarcasController@index')->name('auth.marcas');
 
-        Route::get('/list_all', 'Auth\MarcasController@list')
-            ->name('auth.marcas.list_all');
+        Route::get('/list_all', 'Auth\MarcasController@list')->name('auth.marcas.list_all');
 
-        Route::post('/store', 'Auth\MarcasController@store')
-            ->name('auth.marcas.store');
+        Route::post('/store', 'Auth\MarcasController@store')->name('auth.marcas.store');
 
-        Route::post('/delete', 'Auth\MarcasController@delete')
-            ->name('auth.marcas.delete');
+        Route::post('/delete', 'Auth\MarcasController@delete')->name('auth.marcas.delete');
 
-        Route::get('/partialView/{id}', 'Auth\MarcasController@partialView')
-            ->name('auth.marcas.partial');
+        Route::get('/partialView/{id}', 'Auth\MarcasController@partialView')->name('auth.marcas.partial');
     });
 
 
     Route::group(['prefix' => 'proveedores'], function () {
-        Route::get('', 'Auth\ProveedorController@index')->name('auth.proveedores');
-        Route::get('list_all', 'Auth\ProveedorController@list')->name('auth.proveedores.list_all');
-        Route::post('delete', 'Auth\ProveedorController@delete')->name('auth.proveedores.delete');
+        Route::get('', 'Auth\ProveedoresController@index')->name('auth.proveedores');
+        Route::get('/list_all', 'Auth\ProveedoresController@list')->name('auth.proveedores.list_all');
+        Route::post('/store', 'Auth\ProveedoresController@store')->name('auth.proveedores.store');
+        Route::post('/delete', 'Auth\ProveedoresController@delete')->name('auth.proveedores.delete');
+        Route::get('/partialView/{id}', 'Auth\ProveedoresController@partialView')->name('auth.proveedores.create');
     });
+
 
     Route::group(['prefix' => 'reportes'], function () {
 

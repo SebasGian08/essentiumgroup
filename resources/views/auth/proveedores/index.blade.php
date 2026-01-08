@@ -18,7 +18,9 @@
         </h1>
         <ol class="breadcrumb" style="top: 15px !important;">
             <li class="breadcrumb-item">
-                <button type="button" class="btn-primary"><i class="fa fa-plus"></i> Registrar Proveedor</button>
+                <button type="button" id="btnRegistrarProveedor" class="btn-primary">
+                    <i class="fa fa-plus"></i> Registrar Proveedor
+                </button>
             </li>
         </ol>
     </section>
@@ -42,61 +44,5 @@
 
 @section('scripts')
 <script type="text/javascript" src="{{ asset('auth/plugins/datatable/datatables.min.js') }}"></script>
-<script type="text/javascript">
-$(document).ready(function() {
-    $('#tableProveedores').DataTable({
-        processing: true,
-        serverSide: true,
-        ajax: "{{ route('auth.proveedores.list_all') }}",
-        columns: [
-            { title: 'ID', data: 'id_proveedor', className: 'text-center' },
-            { title: 'RUC', data: 'ruc' },
-            { title: 'Razón Social', data: 'razon_social' },
-            { title: 'Dirección', data: 'direccion' },
-            { title: 'Teléfono', data: 'telefono' },
-            { title: 'Email', data: 'email' },
-            { title: 'Estado', data: 'estado', className: 'text-center',
-              render: function(data) {
-                  return data == 1 ? '<span class="badge badge-success">Activo</span>' :
-                                     '<span class="badge badge-danger">Inactivo</span>';
-              }
-            },
-            { title: 'Acciones', data: 'id_proveedor', className: 'text-center', orderable: false, searchable: false,
-              render: function(id) {
-                  return `
-                    <button class="btn btn-sm btn-outline-danger btn-eliminar-proveedor" data-id="${id}" title="Eliminar">
-                        <i class="fa fa-trash"></i>
-                    </button>
-                  `;
-              }
-            }
-        ],
-        responsive: true,
-        language: {
-            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
-        }
-    });
-
-    $(document).on('click', '.btn-eliminar-proveedor', function() {
-        let id = $(this).data('id');
-        if(confirm('¿Desea eliminar este proveedor?')) {
-            $.ajax({
-                url: "{{ route('auth.proveedores.delete') }}",
-                type: "POST",
-                data: {
-                    _token: "{{ csrf_token() }}",
-                    id: id
-                },
-                success: function(response) {
-                    alert(response.message);
-                    $('#tableProveedores').DataTable().ajax.reload();
-                },
-                error: function() {
-                    alert('Ocurrió un error al eliminar el proveedor.');
-                }
-            });
-        }
-    });
-});
-</script>
+<script src="{{ asset('auth/js/proveedores/index.js') }}"></script>
 @endsection
