@@ -111,6 +111,16 @@ Route::group(['prefix' => 'auth', 'middleware' => 'auth:web'], function () {
         Route::get('/partialView/{id}', 'Auth\ProveedoresController@partialView')->name('auth.proveedores.create');
     });
 
+    Route::group(['prefix'=>'profiles'],function(){
+        Route::get('','Auth\ProfilesController@index')->name('auth.profiles');
+        Route::get('/list_all','Auth\ProfilesController@list_all')->name('auth.profiles.list_all');
+        Route::post('/store','Auth\ProfilesController@store')->name('auth.profiles.store');
+        Route::post('/delete','Auth\ProfilesController@delete')->name('auth.profiles.delete');
+        Route::get('/partialView/{id}','Auth\ProfilesController@partialView')->name('auth.profiles.create');
+    });
+
+
+
 
     Route::group(['prefix' => 'reportes'], function () {
 

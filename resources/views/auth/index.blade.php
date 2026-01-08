@@ -183,6 +183,12 @@
                             </a>
                             <ul class="dropdown-menu multilevel scale-up-left">
                                 <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('auth.profiles') }}">
+                                        <i class="fa fa-key mr-2"></i>
+                                        Gestión de Roles
+                                    </a>
+                                </li>
+                                <li class="nav-item">
                                     <a class="nav-link" href="{{ route('auth.usuarios') }}">
                                         <i class="fa fa-users mr-2"></i> Gestión de Usuarios
                                     </a>
