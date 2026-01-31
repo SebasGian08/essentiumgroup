@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="{{ asset('auth/plugins/datatable/datatables.min.css') }}">
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="{{ asset('app/assets_pedidos/style.css') }}">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 @endsection
 
 @section('contenido')
@@ -50,12 +51,19 @@
                         <label>N° Documento</label>
                         <div class="input-group">
                             <input id="num_doc" class="form-control" placeholder="Ingrese documento" maxlength="11">
-                            <button type="button" id="btnBuscarCliente" class="btn btn-primary">
-                                <i class="fa fa-search"></i>
-                            </button>
+
+                            <div class="input-group-append">
+                                <button type="button" id="btnBuscarCliente" class="btn btn-primary">
+                                    <i class="fa fa-search"></i>
+                                </button>
+
+                                <a href="{{ route('auth.clientes') }}" target="_blank" class="btn btn-success"
+                                    title="Registrar nuevo cliente">
+                                    <i class="fa fa-plus"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
-
                     <div class="form-group col-lg-5">
                         <label>Razón Social / Nombre</label>
                         <input id="razonSocial" name="razon_social" class="form-control">
@@ -80,8 +88,9 @@
 
                     <div class="form-group col-lg-3">
                         <label>Fecha de entrega</label>
-                        <input type="date" name="fecha_entrega" class="form-control" required>
+                        <input type="date" name="fecha_entrega" id="fecha_entrega" class="form-control" required>
                     </div>
+
 
                     <div class="form-group col-lg-3">
                         <label>Método de pago</label>
@@ -114,10 +123,7 @@
                             <option value="cliente">Dirección del Cliente</option>
                         </select>
                     </div>
-                    <div class="form-group col-lg-4">
-                        <label>Dirección *</label>
-                        <input name="direccion_envio" class="form-control" required>
-                    </div>
+
                     <div class="form-group col-lg-4">
                         <label>Ubigeo *</label>
                         <select name="ubigeo_envio" id="ubigeo_envio" class="form-control" required>
@@ -130,6 +136,22 @@
                         </select>
 
                     </div>
+                    <div class="form-group col-lg-12">
+                        <label>Buscar dirección *</label>
+                        <input type="text" id="direccion_envio" name="direccion_envio" class="form-control"
+                            placeholder="Ej: Av. Arequipa 123, Lima (ENTER)" autocomplete="off">
+                        <small id="estado_busqueda" class="text-muted"></small>
+                    </div>
+
+
+                    <div class="form-group col-lg-12">
+                        <label>Ubicación exacta en el mapa *</label>
+                        <div id="mapa_envio" style="height:300px;border-radius:8px;"></div>
+                        <small class="text-muted">Arrastra el marcador para precisar la ubicación</small>
+                    </div>
+
+                    <input type="hidden" name="latitud_envio" id="latitud_envio">
+                    <input type="hidden" name="longitud_envio" id="longitud_envio">
 
 
                 </div>
@@ -151,10 +173,30 @@
                                 <img src="{{ asset($producto->imagen) }}" alt="{{ $producto->descripcion }}">
 
                                 <div class="info">
-                                    <h6>{{ $producto->descripcion }}</h6>
+                                    <h6>
+                                        {{ $producto->descripcion }}
+                                        <button class="btn btn-link btn-sm p-0 ml-2" type="button"
+                                            data-toggle="collapse" data-target="#stock-{{ $producto->id_producto }}"
+                                            aria-expanded="false" aria-controls="stock-{{ $producto->id_producto }}">
+                                            Stock <i class="fa fa-chevron-down flecha"></i>
+                                        </button>
+                                    </h6>
                                     <p class="precio">S/ {{ number_format($producto->precio_venta, 2) }}</p>
-                                    <p class="stock">Stock: {{ $producto->stock }}</p> {{-- mostramos stock --}}
+
+                                    <div class="collapse mt-1" id="stock-{{ $producto->id_producto }}">
+                                        <p class="stock stock-real">Stock real: {{ $producto->stock }}</p>
+                                        <p class="stock stock-reservado">Stock reservado:
+                                            {{ $producto->stock_reservado }}</p>
+                                        <p
+                                            class="stock stock-disponible {{ $producto->stock_disponible > 5 ? 'text-success' : ($producto->stock_disponible > 0 ? 'text-warning' : 'text-danger') }}">
+                                            Disponible: {{ $producto->stock_disponible }}
+                                        </p>
+                                    </div>
                                 </div>
+
+
+
+
 
                                 <div class="acciones">
                                     <input type="number" class="cantidad" min="1" value="1">
@@ -206,24 +248,63 @@
 @section('scripts')
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('fecha_entrega');
+    const hoy = new Date().toISOString().split('T')[0];
+    input.min = hoy;
+});
 $(document).ready(function() {
     $('#ubigeo_envio').select2({
         placeholder: 'Buscar ubigeo...',
         allowClear: true,
         width: '100%'
     });
+
+    function actualizarStock() {
+        $.ajax({
+            url: '/auth/pedidos/stock-actualizado',
+            method: 'GET',
+            success: function(productos) {
+                productos.forEach(p => {
+                    const card = $(`.producto-card[data-id='${p.id_producto}']`);
+                    if (card.length) {
+                        card.find('.stock-real').text(`Stock real: ${p.stock}`);
+                        card.find('.stock-reservado').text(
+                            `Stock reservado: ${p.stock_reservado}`);
+                        card.find('.stock-disponible').text(
+                            `Disponible: ${p.stock_disponible}`);
+
+                        // Opcional: cambiar color según disponibilidad
+                        const dispElem = card.find('.stock-disponible');
+                        dispElem.removeClass('text-success text-warning text-danger');
+                        if (p.stock_disponible == 0) dispElem.addClass('text-danger');
+                        else if (p.stock_disponible <= 5) dispElem.addClass('text-warning');
+                        else dispElem.addClass('text-success');
+                    }
+                });
+            }
+        });
+    }
+
+    // Llamar cada 5 segundos
+    setInterval(actualizarStock, 5000);
+
+
     function buscarCliente() {
         let documento = $('#num_doc').val().trim();
-        if(documento === '') return;
+        if (documento === '') return;
 
         $.ajax({
             url: '/auth/clientes/search',
             method: 'GET',
-            data: { documento: documento },
+            data: {
+                documento: documento
+            },
             success: function(res) {
-                if(res && res.cliente) {
+                if (res && res.cliente) {
                     $('#razonSocial').val(res.cliente.nombres);
                     $('#direccion').val(res.cliente.direccion);
                     $('#telefono').val(res.cliente.telefono);
@@ -244,14 +325,99 @@ $(document).ready(function() {
 
     // ✅ Enter en input de documento
     $('#num_doc').on('keypress', function(e) {
-        if(e.which === 13) { // Enter
+        if (e.which === 13) { // Enter
             e.preventDefault();
             buscarCliente();
         }
     });
 });
-
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    let bloqueado = false;
+    const cache = {};
+
+    const map = L.map('mapa_envio').setView([-12.0464, -77.0428], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    const marker = L.marker([-12.0464, -77.0428], {
+        draggable: true
+    }).addTo(map);
+
+    function setCoords(lat, lng, actualizarTexto = true) {
+        lat = parseFloat(lat);
+        lng = parseFloat(lng);
+
+        marker.setLatLng([lat, lng]);
+        map.setView([lat, lng], 17);
+
+        $('#latitud_envio').val(lat);
+        $('#longitud_envio').val(lng);
+
+        if (actualizarTexto) reverseGeocode(lat, lng);
+    }
+
+    function reverseGeocode(lat, lng) {
+        if (bloqueado) return;
+        bloqueado = true;
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.display_name) {
+                    $('#direccion_envio').val(data.display_name);
+                }
+            })
+            .finally(() => bloqueado = false);
+    }
+
+    // Buscar por texto (ENTER)
+    $('#direccion_envio').on('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+
+        const q = this.value.trim();
+        if (q.length < 5) return;
+
+        if (cache[q]) {
+            setCoords(cache[q].lat, cache[q].lon, false);
+            return;
+        }
+
+        fetch(
+                `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`
+            )
+            .then(r => r.json())
+            .then(data => {
+                if (data.length) {
+                    cache[q] = data[0];
+                    setCoords(data[0].lat, data[0].lon, false);
+                } else {
+                    alert('No se encontró la dirección');
+                }
+            });
+    });
+
+    // Click en mapa
+    map.on('click', e => {
+        setCoords(e.latlng.lat, e.latlng.lng);
+    });
+
+    // Arrastrar marcador
+    marker.on('dragend', e => {
+        const pos = e.target.getLatLng();
+        setCoords(pos.lat, pos.lng);
+    });
+
+});
+</script>
+
+
+
 
 <script type="text/javascript" src="{{ asset('auth/js/pedidos/index.js') }}"></script>
 

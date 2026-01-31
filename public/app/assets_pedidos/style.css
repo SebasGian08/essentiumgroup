@@ -242,6 +242,73 @@
     font-size: 0.8rem;
 }
 
+/* ===== Modal de Mantenimiento de Clientes ===== */
+
+#modalMantenimientoClientes .modal-content {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    background-color: #fff;
+    transition: all 0.3s ease-in-out;
+}
+
+/* Header */
+#modalMantenimientoClientes .modal-header {
+    background: linear-gradient(to right, #ffffffff, #ffffffff);
+    color: #fff;
+    border-bottom: none;
+    padding: 1rem 1.5rem;
+}
+
+#modalMantenimientoClientes .modal-header .modal-title {
+    color: #34495e;
+    text-transform: none;
+    font-size: 1.1rem;
+}
+
+#modalMantenimientoClientes .modal-header .btn-close {
+    filter: invert(1);
+    opacity: 0.8;
+}
+
+
+#modalMantenimientoClientes .modal-header .btn-close:hover {
+    opacity: 1;
+}
+
+/* Body */
+#modalMantenimientoClientes .modal-body {
+    background-color: #f8f9ff;
+    border-top: 1px solid #f0f1f5;
+    border-bottom: 1px solid #f0f1f5;
+}
+
+#modalMantenimientoClientes label {
+    font-size: 0.9rem;
+    color: #000000ff;
+    display: block;
+    margin-bottom: 0.25rem;
+    padding-left: 6px;
+}
+
+#modalMantenimientoClientes input.form-control,
+#modalMantenimientoClientes select.form-select {
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    font-size: 0.9rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#modalMantenimientoClientes input.form-control:focus,
+#modalMantenimientoClientes select.form-select:focus {
+    border-color: #5864ff;
+    box-shadow: 0 0 0 0.15rem rgba(88, 100, 255, 0.25);
+}
+
+#modalMantenimientoClientes small.text-danger {
+    font-size: 0.8rem;
+}
 /* Imagen */
 #previewImagen {
     max-width: 150px;

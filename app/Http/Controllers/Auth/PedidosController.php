@@ -24,28 +24,40 @@ class PedidosController extends Controller
         $User = Auth::guard('web')->user();
         $userId = $User->id;
 
-        // Traer todos los usuarios activos (opcional, si necesitas listarlos)
+        // Traer todos los usuarios activos
         $users = User::where('estado', 1)
                     ->whereNull('deleted_at')
                     ->get();
 
-        // Traer métodos de pago activos
+        // Métodos de pago activos
         $metodosPago = MetodoPago::where('estado', 1)
                                 ->whereNull('deleted_at')
                                 ->get();
 
-        // Traer ubigeo (departamentos, provincias o distritos)
+        // Ubigeos activos
         $ubigeos = Ubigeo::where('estado', 1)
                         ->whereNull('deleted_at')
                         ->get();
 
-        // Traer productos activos
+        // Productos activos con stock disponible y reservado
         $productos = Producto::where('estado', 1)
-                            ->whereNull('deleted_at')
-                            ->get();
+            ->whereNull('deleted_at')
+            ->get()
+            ->map(function($p) {
+                $reservado = DB::table('stock_reservado')
+                    ->where('id_producto', $p->id_producto)
+                    ->where('estado', 'RESERVADO')
+                    ->sum('cantidad');
+
+                $p->stock_reservado = $reservado;
+                $p->stock_disponible = $p->stock - $reservado;
+
+                return $p;
+            });
 
         return view('auth.pedidos.index', compact('userId', 'users', 'metodosPago', 'ubigeos', 'productos'));
     }
+
 
     public function verlistado(){
         $User = Auth::guard('web')->user();
@@ -81,6 +93,9 @@ class PedidosController extends Controller
             'metodo_pago' => 'required|exists:metodo_pagos,id_metodo_pago',
             'direccion_envio' => 'required|string|max:255',
             'ubigeo_envio' => 'required|exists:ubigeos,id_ubigeo',
+            'latitud_envio' => 'required|numeric|between:-90,90',
+            'longitud_envio' => 'required|numeric|between:-180,180',
+
 
             // ===============================
             // VALIDACIÓN DE PRODUCTOS
@@ -105,25 +120,32 @@ class PedidosController extends Controller
         // ===============================
         // VALIDACIÓN DE STOCK (NEGOCIO)
         // ===============================
+        $productosIds = collect($request->productos)->pluck('id_producto');
+
+        $productos = DB::table('productos')
+            ->whereIn('id_producto', $productosIds)
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id_producto');
+
+        $reservas = DB::table('stock_reservado')
+            ->whereIn('id_producto', $productosIds)
+            ->where('estado', 'RESERVADO')
+            ->select('id_producto', DB::raw('SUM(cantidad) as reservado'))
+            ->groupBy('id_producto')
+            ->pluck('reservado', 'id_producto');
+
         foreach ($request->productos as $p) {
-            $producto = DB::table('productos')
-                ->where('id_producto', $p['id_producto'])
-                ->first();
-
-            if (!$producto) {
-                return redirect()->back()
-                    ->withErrors(['productos' => 'Producto no encontrado.'])
-                    ->withInput();
-            }
-
-            if ($p['cantidad'] > $producto->stock) {
-                return redirect()->back()
-                    ->withErrors([
-                        'productos' => "Stock insuficiente para el producto: {$producto->descripcion}"
-                    ])
-                    ->withInput();
+            $prod = $productos[$p['id_producto']];
+            $stockDisponible = $prod->stock - ($reservas[$p['id_producto']] ?? 0);
+            if ($p['cantidad'] > $stockDisponible) {
+                return back()->withErrors([
+                    'productos' => "Stock insuficiente para {$prod->descripcion}"
+                ]);
             }
         }
+
+
 
         // ===============================
         // TRANSACCIÓN
@@ -159,6 +181,8 @@ class PedidosController extends Controller
                 'tipo_pedido' => $request->punto_llegada ?? 'cliente',
                 'direccion_envio' => $request->direccion_envio,
                 'ubigeo_envio' => $request->ubigeo_envio,
+                'latitud_envio' => $request->latitud_envio,
+                'longitud_envio' => $request->longitud_envio,
                 'subtotal' => $subtotal,
                 'igv' => $igv,
                 'total' => $total,
@@ -181,11 +205,16 @@ class PedidosController extends Controller
                     'total' => $p['cantidad'] * $p['precio'],
                 ]);
 
-                // Descontar stock
-                DB::table('productos')
-                    ->where('id_producto', $p['id_producto'])
-                    ->decrement('stock', $p['cantidad']);
+                // RESERVAR STOCK (NO DESCONTAR)
+                DB::table('stock_reservado')->insert([
+                    'id_producto' => $p['id_producto'],
+                    'id_pedido'   => $pedidoId,
+                    'cantidad'    => $p['cantidad'],
+                    'estado'      => 'RESERVADO',
+                    'created_at'  => now()
+                ]);
             }
+
 
             // ===============================
             // SEGUIMIENTO INICIAL
@@ -225,87 +254,84 @@ class PedidosController extends Controller
         $query = DB::table('pedidos')
             ->leftJoin('ubigeos', 'ubigeos.id_ubigeo', '=', 'pedidos.ubigeo_envio')
 
-            // SEGUIMIENTO NORMALIZADO
             ->leftJoin(DB::raw('(
                 SELECT 
-                    ps.id_pedido,
-                    GROUP_CONCAT(es.nombre) AS estados,
-                    MAX(ps.comentario) AS comentario
-                FROM pedido_seguimiento ps
+                    ps1.id_pedido,
+                    es.nombre AS estado_seguimiento,
+                    ps1.comentario
+                FROM pedido_seguimiento ps1
                 JOIN estado_seguimiento es 
-                    ON es.id_estado_seguimiento = ps.id_estado_seguimiento
-                WHERE ps.deleted_at IS NULL
-                GROUP BY ps.id_pedido
-            ) AS ps'), 'ps.id_pedido', '=', 'pedidos.id_pedido')
+                    ON es.id_estado_seguimiento = ps1.id_estado_seguimiento
+                WHERE ps1.deleted_at IS NULL
+                AND ps1.id_seguimiento = (
+                    SELECT MAX(ps2.id_seguimiento)
+                    FROM pedido_seguimiento ps2
+                    WHERE ps2.id_pedido = ps1.id_pedido
+                        AND ps2.deleted_at IS NULL
+                )
+            ) AS seguimiento'), 'seguimiento.id_pedido', '=', 'pedidos.id_pedido')
 
-            // PRODUCTOS
+
             ->leftJoin(DB::raw('(
                 SELECT 
                     pd.id_pedido,
                     GROUP_CONCAT(CONCAT(p.descripcion, " (", pd.cantidad, ")")) AS productos
                 FROM pedidos_detalle pd
-                JOIN productos p ON pd.id_producto = p.id_producto
+                JOIN productos p ON p.id_producto = pd.id_producto
                 GROUP BY pd.id_pedido
             ) AS pdp'), 'pdp.id_pedido', '=', 'pedidos.id_pedido')
 
             ->select(
                 'pedidos.id_pedido',
                 'pedidos.nombre_cliente',
-                'pedidos.id_usuario',
                 'pedidos.fecha_entrega',
                 'pedidos.fecha_pedido',
-                'pedidos.direccion_cliente',
                 'pedidos.telefono_cliente',
-                'pedidos.direccion_envio',
-                'pedidos.estado_pedido',
-                'pedidos.created_at',
                 'pedidos.total',
-                'pedidos.observacion',
 
                 'ubigeos.departamento',
                 'ubigeos.provincia',
                 'ubigeos.distrito',
 
-                'ps.comentario',
-                'ps.estados',
+                'seguimiento.estado_seguimiento',
+                'seguimiento.comentario',
                 'pdp.productos'
             )
-            ->where('pedidos.id_usuario', $userId)
-            ->orderBy('pedidos.created_at', 'desc');
+            ->where('pedidos.id_usuario', $userId);
 
-        // FILTROS DE FECHA
-        if ($request->filled('fecha_inicio')) {
-            $query->whereDate('pedidos.fecha_pedido', '>=', $request->fecha_inicio);
+
+        if ($request->filled('fecha_inicio') && $request->filled('fecha_fin')) {
+            $query->whereBetween('pedidos.fecha_pedido', [
+                $request->fecha_inicio,
+                $request->fecha_fin
+            ]);
         }
 
-        if ($request->filled('fecha_fin')) {
-            $query->whereDate('pedidos.fecha_pedido', '<=', $request->fecha_fin);
+        if ($request->filled('estado')) {
+            $query->where('seguimiento.estado_seguimiento', $request->estado);
         }
 
-        $pedidos = $query->get()->map(function ($pedido) {
+        $pedidos = $query
+            ->orderBy('pedidos.created_at', 'desc')
+            ->get()
+            ->map(function ($pedido) {
 
-            // PRODUCTOS A ARRAY
-            $pedido->productos = collect(explode(',', $pedido->productos ?? ''))
-                ->map(function ($p) {
-                    preg_match('/^(.*)\s\((\d+)\)$/', trim($p), $m);
-                    return [
-                        'descripcion' => $m[1] ?? trim($p),
-                        'cantidad' => $m[2] ?? 0
-                    ];
-                });
 
-            // ESTADOS A ARRAY
-            $pedido->estado_seguimiento = $pedido->estados
-                ? explode(',', $pedido->estados)
-                : [];
+                $pedido->productos = collect(explode(',', $pedido->productos ?? ''))
+                    ->map(function ($p) {
+                        preg_match('/^(.*)\s\((\d+)\)$/', trim($p), $m);
+                        return [
+                            'descripcion' => $m[1] ?? trim($p),
+                            'cantidad' => $m[2] ?? 0
+                        ];
+                    });
 
-            unset($pedido->estados);
-
-            return $pedido;
-        });
+                return $pedido;
+            });
 
         return response()->json(['data' => $pedidos]);
     }
+
 
 
     public function gestionList(Request $request)
@@ -339,9 +365,7 @@ class PedidosController extends Controller
     }
 
 
-
-
- public function gestionGet(Request $request)
+    public function gestionGet(Request $request)
     {
         $pedido = DB::table('pedidos as p')
             ->leftJoin('users as u', 'u.id', '=', 'p.id_usuario')
@@ -417,46 +441,13 @@ class PedidosController extends Controller
                 'updated_at' => now()
             ]);
 
-            // 2. Kardex de SALIDA y actualización de stock
-            $detalles = DB::table('pedidos_detalle')
+            // 2. Actualizar stock_reservado a 'PREPARADO' si se valida el pedido
+            DB::table('stock_reservado')
                 ->where('id_pedido', $request->id_pedido)
-                ->get();
+                ->where('estado', 'RESERVADO')
+                ->update(['estado' => 'PREPARADO', 'updated_at' => now()]);
 
-            foreach ($detalles as $item) {
-                // stock actual con lock
-                $producto = DB::table('productos')
-                    ->where('id_producto', $item->id_producto)
-                    ->lockForUpdate()
-                    ->first();
-
-                $stockAnterior = $producto->stock;
-                $stockNuevo = $stockAnterior - $item->cantidad; // SALIDA
-
-                if ($stockNuevo < 0) {
-                    throw new \Exception("Stock insuficiente para el producto: {$item->descripcion}");
-                }
-
-                // kardex (SALIDA)
-                DB::table('kardex')->insert([
-                    'id_producto' => $item->id_producto,
-                    'fecha_movimiento' => now(),
-                    'tipo_movimiento' => 'S', // S de Salida
-                    'motivo' => 'DESPACHO PEDIDO',
-                    'id_origen' => $request->id_pedido,
-                    'cantidad' => $item->cantidad,
-                    'stock_anterior' => $stockAnterior,
-                    'stock_nuevo' => $stockNuevo,
-                    'costo_unitario' => $item->precio_unitario ?? 0,
-                    'costo_total' => ($item->precio_unitario ?? 0) * $item->cantidad
-                ]);
-
-                // actualizar stock del producto
-                DB::table('productos')
-                    ->where('id_producto', $item->id_producto)
-                    ->update(['stock' => $stockNuevo]);
-            }
-
-            // 3. Actualizar estado del pedido a 'VALIDADO' o 'DESPACHADO'
+            // 3. Actualizar estado del pedido a 'VALIDADO'
             DB::table('pedidos')
                 ->where('id_pedido', $request->id_pedido)
                 ->update(['estado_pedido' => 'VALIDADO', 'updated_at' => now()]);
@@ -465,18 +456,19 @@ class PedidosController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Pedido validado y despachado correctamente. Kardex actualizado.'
+                'message' => 'Pedido validado correctamente. Stock reservado actualizado.'
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Ocurrió un error al despachar el pedido.',
+                'message' => 'Ocurrió un error al validar el pedido.',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
+
 
     public function descargarGuia($id_pedido)
     {
@@ -504,72 +496,101 @@ class PedidosController extends Controller
     {
         $idPedido = $request->id_pedido;
 
-        $pedido = DB::table('pedidos')->where('id_pedido', $idPedido)->first();
-        if (!$pedido) {
-            return response()->json(['message' => 'Pedido no encontrado.'], 404);
-        }
-
-        $detalles = DB::table('pedidos_detalle')->where('id_pedido', $idPedido)->get();
-        if ($detalles->isEmpty()) {
-            return response()->json(['message' => 'El pedido no tiene productos.'], 400);
-        }
-
         DB::beginTransaction();
         try {
-            // 1️⃣ Marcar pedido como ENTREGADO
-            DB::table('pedidos')->where('id_pedido', $idPedido)
-                ->update(['estado_pedido' => 'ENTREGADO', 'updated_at' => now()]);
 
-            // 2️⃣ Descontar stock y registrar kardex
-            foreach ($detalles as $d) {
-                $producto = DB::table('productos')->where('id_producto', $d->id_producto)->first();
-                if (!$producto) continue;
+            // 1. Cambiar estado del pedido a ENTREGADO
+            DB::table('pedidos')
+                ->where('id_pedido', $idPedido)
+                ->update([
+                    'estado_pedido' => 'ENTREGADO',
+                    'updated_at' => now()
+                ]);
+
+            // 2. Obtener reservas preparadas
+            $reservas = DB::table('stock_reservado')
+                ->where('id_pedido', $idPedido)
+                ->where('estado', 'PREPARADO')
+                ->get();
+
+            foreach ($reservas as $r) {
+
+                $producto = DB::table('productos')
+                    ->where('id_producto', $r->id_producto)
+                    ->lockForUpdate()
+                    ->first();
 
                 $stockAnterior = $producto->stock;
-                $stockNuevo = $stockAnterior - $d->cantidad;
+                $stockNuevo = $stockAnterior - $r->cantidad;
 
-                DB::table('productos')->where('id_producto', $d->id_producto)
+                if ($stockNuevo < 0) {
+                    throw new \Exception("Stock insuficiente para el producto: {$producto->descripcion}");
+                }
+
+                // Actualizar stock real
+                DB::table('productos')
+                    ->where('id_producto', $r->id_producto)
                     ->update(['stock' => $stockNuevo]);
 
+                // Kardex de SALIDA
                 DB::table('kardex')->insert([
-                    'id_producto' => $d->id_producto,
+                    'id_producto' => $r->id_producto,
                     'fecha_movimiento' => now(),
-                    'tipo_movimiento' => 'S', // Salida
+                    'tipo_movimiento' => 'S',
                     'motivo' => 'ENTREGA PEDIDO',
                     'id_origen' => $idPedido,
-                    'cantidad' => $d->cantidad,
+                    'cantidad' => $r->cantidad,
                     'stock_anterior' => $stockAnterior,
                     'stock_nuevo' => $stockNuevo,
-                    'costo_unitario' => $d->precio_unitario,
-                    'costo_total' => $d->cantidad * $d->precio_unitario,
+                    'costo_unitario' => 0,
+                    'costo_total' => 0,
                 ]);
             }
 
-            // 3️⃣ Registrar seguimiento ENTREGADO
+            // 3. Confirmar reservas
+            DB::table('stock_reservado')
+                ->where('id_pedido', $idPedido)
+                ->where('estado', 'PREPARADO')
+                ->update(['estado' => 'CONFIRMADO', 'updated_at' => now()]);
+
+            // 4. Seguimiento
             DB::table('pedido_seguimiento')->insert([
                 'id_pedido' => $idPedido,
-                'id_estado_seguimiento' => 6, // ENTREGADO
-                'id_motorizado' => auth()->id(),
+                'id_estado_seguimiento' => 6,
                 'id_usuario_registro' => auth()->id(),
-                'comentario' => 'Pedido entregado, stock descontado y registrado en kardex.',
+                'comentario' => 'Pedido entregado y stock descontado.',
                 'evidencia_entrega' => 1,
-                'evidencia_chat' => 0,
-                'evidencia_llamada_chat' => 0,
-                'evidencia_soporte' => 0,
                 'created_at' => now(),
             ]);
 
             DB::commit();
+            return response()->json(['message' => 'Pedido entregado correctamente']);
 
-            return response()->json(['message' => 'Pedido entregado correctamente.']);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Error al entregar pedido: '.$e->getMessage()], 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
 
+    public function stockActualizado()
+    {
+        $productos = Producto::where('estado', 1)
+            ->whereNull('deleted_at')
+            ->get()
+            ->map(function($p) {
+                $reservado = DB::table('stock_reservado')
+                    ->where('id_producto', $p->id_producto)
+                    ->where('estado', 'RESERVADO')
+                    ->sum('cantidad');
 
+                $p->stock_disponible = $p->stock - $reservado;
+                $p->stock_reservado = $reservado;
+                return $p;
+            });
+
+        return response()->json($productos);
+    }
 
 
 }

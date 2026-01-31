@@ -65,6 +65,8 @@ Route::group(['prefix' => 'auth', 'middleware' => 'auth:web'], function () {
         Route::post('gestion/update', 'Auth\PedidosController@gestionUpdate')->name('auth.pedidos.gestion_update');
         Route::get('{id}/guia', 'Auth\PedidosController@descargarGuia')->name('auth.pedidos.guia');
         Route::post('entregar', 'Auth\PedidosController@entregar')->name('auth.pedidos.entregar');
+        // RUTA PARA STOCK ACTUALIZADO
+        Route::get('stock-actualizado', 'Auth\PedidosController@stockActualizado')->name('auth.pedidos.stock_actualizado');
     });
 
     /* GESTION DE producto */

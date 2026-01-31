@@ -26,6 +26,15 @@
             </div>
             <div class="col-md-3"><input type="date" id="fecha_fin" class="form-control" placeholder="Fecha Fin"></div>
             <div class="col-md-3">
+                <select id="filtro_estado" class="form-control">
+                    <option value="">Todos los estados</option>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="validado">Validado</option>
+                    <option value="entregado">Entregado</option>
+                </select>
+
+            </div>
+            <div class="col-md-3">
                 <button id="btn-filtrar" class="btn btn-light-custom btn-m"><i class="fa fa-search"></i>
                     Filtrar</button>
             </div>
@@ -57,10 +66,14 @@
 <script src="{{ asset('auth/plugins/datatable/datatables.min.js') }}"></script>
 <script>
 $(document).ready(function() {
+    const hoy = new Date().toISOString().split('T')[0];
+
+    $('#fecha_inicio').val(hoy);
+    $('#fecha_fin').val(hoy);
 
     var table = $('#tablePedidos').DataTable({
         processing: true,
-        serverSide: false, // 🔹 Cambia a true si luego usas Yajra DataTables
+        serverSide: false,
         responsive: true,
         paging: true,
         pageLength: 10,
@@ -73,6 +86,7 @@ $(document).ready(function() {
             data: function(d) {
                 d.fecha_inicio = $('#fecha_inicio').val();
                 d.fecha_fin = $('#fecha_fin').val();
+                d.estado = $('#filtro_estado').val();
             }
         },
         columns: [{ // 🔹 Columna correlativo
@@ -92,19 +106,6 @@ $(document).ready(function() {
                     return `Entrega: ${row.fecha_entrega ?? ''}<br>Pedido: ${row.fecha_pedido ?? ''}`;
                 }
             },
-            /* { // Botón historial
-                data: 'acciones',
-                name: 'acciones',
-                orderable: false,
-                searchable: false,
-                render: function(data, type, row) {
-                    return `
-                    <button class="btn-telegram" onclick="verHistorial(${row.id_pedido})">
-                        <i class="fa fa-telegram"></i> Historial
-                    </button>
-                `;
-                }
-            }, */
             { // Comentario
                 data: 'comentario',
                 name: 'comentario',
@@ -163,29 +164,21 @@ $(document).ready(function() {
                 `;
                 }
             },
-            { // Estado seguimiento
+            {
                 data: 'estado_seguimiento',
                 name: 'estado_seguimiento',
                 orderable: false,
                 searchable: false,
-                render: function(data, type, row) {
-                    let estados = Array.isArray(data) ? data : [];
+                render: function(data) {
+                    if (!data) return '<span class="text-muted">Sin estado</span>';
 
-                    if (estados.length === 0)
-                        return '<span class="text-muted">Sin estado</span>';
+                    let text = data.replace(/_/g, ' ');
+                    text = text.charAt(0).toUpperCase() + text.slice(1);
 
-                    // Solo mostrar el texto, capitalizando la primera letra y reemplazando _
-                    let html = '';
-                    estados.forEach(function(estado) {
-                        let text = estado.replace(/_/g, ' ');
-                        text = text.charAt(0).toUpperCase() + text.slice(1);
-                        html +=
-                            `<div class="estado-pedido" style="margin-bottom:4px;">${text}</div>`;
-                    });
-
-                    return html;
+                    return `<div class="estado-pedido">${text}</div>`;
                 }
             }
+
 
 
 
