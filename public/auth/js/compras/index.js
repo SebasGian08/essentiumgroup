@@ -141,19 +141,41 @@ $(document).ready(function () {
         }
     });
 
-    // ===============================
-    // BUSCADOR
-    // ===============================
+    /* ===============================
+       BUSCADOR
+    ================================*/
+    function normalizarTexto(texto) {
+        return texto
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9\s]/g, "");
+    }
+
     $("#buscarProducto").on("keyup", function () {
 
-        const busqueda = $(this).val().toLowerCase();
+        const busqueda = normalizarTexto($(this).val().trim());
+
+        $(".producto-card").hide();
+
+        // si no hay texto, mostrar según paginación normal
+        if (busqueda === '') {
+            productosFiltrados = productos;
+            paginaActual = 1;
+            mostrarPagina(paginaActual);
+            return;
+        }
+
+        const palabras = busqueda.split(/\s+/);
 
         productosFiltrados = $(".producto-card").filter(function () {
-            return $(this).data("nombre").toLowerCase().includes(busqueda);
+            const nombre = normalizarTexto($(this).data("nombre") || '');
+            return palabras.every(p => nombre.includes(p));
         });
+
+        productosFiltrados.show();
 
         paginaActual = 1;
         mostrarPagina(paginaActual);
     });
-
 });

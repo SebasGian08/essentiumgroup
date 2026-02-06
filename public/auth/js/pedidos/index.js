@@ -205,7 +205,6 @@ $(document).ready(function () {
 
         const busqueda = normalizarTexto($(this).val().trim());
 
-        // 🔥 ocultar TODOS primero
         $(".producto-card").hide();
 
         // si no hay texto, mostrar según paginación normal
@@ -223,7 +222,6 @@ $(document).ready(function () {
             return palabras.every(p => nombre.includes(p));
         });
 
-        // 👉 mostrar SOLO los encontrados
         productosFiltrados.show();
 
         paginaActual = 1;
