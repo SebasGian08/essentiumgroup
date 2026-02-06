@@ -1,110 +1,273 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
+
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <title>Guía de Pedido {{ $pedido->codigo_pedido }}</title>
+
     <style>
-        /* Tipografía moderna */
-        body {
-            font-family: 'Montserrat', sans-serif;
-            background-color: #ffffffff;
-            margin: 0;
-            padding: 20px;
-        }
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 12px;
+        color: #000;
+        margin: 30px;
+    }
 
-        /* Título */
-        h2 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 20px;
-        }
+    /* ===== CABECERA ===== */
+    .header {
+        width: 100%;
+        margin-bottom: 20px;
+    }
 
-        /* Información del pedido */
-        .info-pedido p {
-            margin: 5px 0;
-            line-height: 1.5;
-            font-size: 14px;
-        }
+    .empresa {
+        width: 65%;
+        float: left;
+    }
 
-        .info-pedido strong {
-            color: #34495e;
-        }
+    .empresa h2 {
+        margin: 0;
+        font-size: 16px;
+        text-transform: uppercase;
+    }
 
-        /* Tabla de productos */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 14px;
-        }
+    .empresa p {
+        margin: 2px 0;
+        font-size: 11px;
+    }
 
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: center;
-        }
+    .documento {
+        width: 35%;
+        float: right;
+        text-align: center;
+        border: 1px solid #000;
+        padding: 8px;
+    }
 
-        th {
-            background-color: #3498db;
-            color: #fff;
-        }
+    .documento h3 {
+        margin: 0;
+        font-size: 14px;
+    }
 
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
+    .clear {
+        clear: both;
+    }
 
-        /* Totales */
-        .total {
-            text-align: right;
-            margin-top: 15px;
-            font-size: 16px;
-            font-weight: bold;
-            color: #e74c3c;
-        }
+    /* ===== BLOQUES ===== */
+    .bloque {
+        width: 100%;
+        margin-top: 15px;
+    }
 
-        /* Encabezados de sección */
-        h3 {
-            margin-top: 25px;
-            color: #2c3e50;
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 5px;
-        }
+    .bloque table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .bloque td {
+        padding: 6px;
+        font-size: 11px;
+    }
+
+    .label {
+        font-weight: bold;
+        width: 20%;
+    }
+
+    /* ===== TABLA PRODUCTOS ===== */
+    table.productos {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+
+    table.productos th {
+        border: 1px solid #000;
+        padding: 6px;
+        background: #f0f0f0;
+        font-size: 11px;
+    }
+
+    table.productos td {
+        border: 1px solid #000;
+        padding: 6px;
+        font-size: 11px;
+    }
+
+    .text-right {
+        text-align: right;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    /* ===== TOTALES ===== */
+    .totales {
+        width: 40%;
+        float: right;
+        margin-top: 10px;
+    }
+
+    .totales table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .totales td {
+        padding: 6px;
+        border: 1px solid #000;
+        font-size: 11px;
+    }
+
+    .totales .label {
+        font-weight: bold;
+    }
+
+    /* ===== OBSERVACIONES ===== */
+    .observaciones {
+        margin-top: 20px;
+        font-size: 11px;
+    }
+
+    /* ===== FIRMA ===== */
+    .firma {
+        margin-top: 50px;
+        width: 40%;
+        text-align: center;
+    }
+
+    .firma hr {
+        margin-bottom: 5px;
+    }
+
+    .footer-entrega {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        right: 30px;
+    }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h2>Guía de Pedido: {{ $pedido->codigo_pedido }}</h2>
 
-        <div class="info-pedido">
-            <p><strong>Cliente:</strong> {{ $pedido->nombre_cliente }}</p>
-            <p><strong>Teléfono:</strong> {{ $pedido->telefono_cliente }}</p>
-            <p><strong>Dirección:</strong> {{ $pedido->direccion_envio }}, {{ $pedido->distrito }}, {{ $pedido->provincia }}, {{ $pedido->departamento }}</p>
-            <p><strong>Fecha de Entrega:</strong> {{ $pedido->fecha_entrega }}</p>
+<body>
+
+    <!-- CABECERA -->
+    <div class="header">
+        <div class="empresa">
+            <h2>ESSENTIUM GROUP E.I.R.L.</h2>
+            <p>RUC: 20614652234</p>
+            <p>Dirección: CAL. JOSE MARIA ARGUEDAS NRO. 237 URB. LUCYANA</p>
+            <p>Teléfono: 980 812 235</p>
         </div>
 
-        <h3>Productos</h3>
+        <div class="documento">
+            <h3>GUÍA DE PEDIDO</h3>
+            <p>N° {{ $pedido->codigo_pedido }}</p>
+            <p>Fecha: {{ date('d/m/Y', strtotime($pedido->fecha_entrega)) }}</p>
+        </div>
+    </div>
+
+    <div class="clear"></div>
+
+    <!-- DATOS CLIENTE -->
+    <div class="bloque">
         <table>
-            <thead>
-                <tr>
-                    <th>Código</th>
-                    <th>Descripción</th>
-                    <th>Cantidad</th>
-                    <th>Precio Unitario</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($detalles as $d)
-                <tr>
-                    <td>{{ $d->codigo_producto }}</td>
-                    <td style="text-align:left">{{ $d->descripcion }}</td>
-                    <td>{{ $d->cantidad }}</td>
-                    <td>S/ {{ number_format($d->precio_unitario,2) }}</td>
-                </tr>
-                @endforeach
-            </tbody>
+            <tr>
+                <td class="label">Cliente:</td>
+                <td>{{ $pedido->nombre_cliente }}</td>
+                <td class="label">Teléfono:</td>
+                <td>{{ $pedido->telefono_cliente }}</td>
+            </tr>
+            <tr>
+                <td class="label">Dirección:</td>
+                <td colspan="3">
+                    {{ $pedido->direccion_envio }},
+                    {{ $pedido->distrito }},
+                    {{ $pedido->provincia }},
+                    {{ $pedido->departamento }}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- PRODUCTOS -->
+    <table class="productos">
+        <thead>
+            <tr>
+                <th style="width:10%">Código</th>
+                <th>Descripción</th>
+                <th style="width:10%">Cant.</th>
+                <th style="width:15%">Precio Unit.</th>
+                <th style="width:15%">Importe</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($detalles as $d)
+            <tr>
+                <td class="text-center">{{ $d->codigo_producto }}</td>
+                <td>{{ $d->descripcion }}</td>
+                <td class="text-center">{{ $d->cantidad }}</td>
+                <td class="text-right">S/ {{ number_format($d->precio_unitario, 2) }}</td>
+                <td class="text-right">
+                    S/ {{ number_format($d->cantidad * $d->precio_unitario, 2) }}
+                </td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+
+    <!-- TOTALES -->
+    <div class="totales">
+        <table>
+            <tr>
+                <td class="label">Total</td>
+                <td class="text-right">
+                    S/ {{ number_format($pedido->total, 2) }}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="clear"></div>
+
+    <!-- OBSERVACIONES -->
+    <div class="observaciones">
+        <strong>Observaciones:</strong>
+        <p>Documento generado automáticamente. No válido como comprobante de pago.</p>
+    </div>
+    <!-- CONFORMIDAD DE ENTREGA -->
+    <!-- CONFORMIDAD DE ENTREGA (FOOTER) -->
+    <div class="footer-entrega">
+
+        <table width="100%" style="border-collapse:collapse;">
+            <tr>
+                <!-- CLIENTE -->
+                <td width="50%" style="text-align:center; padding:10px;">
+                    <hr style="width:80%;">
+                    <p><strong>RECIBÍ CONFORME</strong></p>
+                    <p>Cliente / Receptor</p>
+                    <p>DNI:</p>
+                </td>
+
+                <!-- DESPACHADOR -->
+                <td width="50%" style="text-align:center; padding:10px;">
+                    <hr style="width:80%;">
+                    <p><strong>ENTREGUÉ CONFORME</strong></p>
+                    <p>Despachador</p>
+                    <p>DNI:</p>
+                </td>
+            </tr>
         </table>
 
-        <p class="total">Total: S/ {{ number_format($pedido->total,2) }}</p>
     </div>
+
+
+    <!-- FIRMA -->
+    <!--  <div class="firma">
+        <hr>
+        <p>Firma y Sello</p>
+    </div>
+ -->
 </body>
+
 </html>

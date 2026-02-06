@@ -69,30 +69,36 @@
                         <input id="razonSocial" name="razon_social" class="form-control">
                     </div>
 
-                    <div class="form-group col-lg-6">
-                        <label>Dirección</label>
+                    <div class="form-group col-lg-9">
+                        <label>Dirección del Cliente</label>
                         <input id="direccion" name="direccion" class="form-control">
                     </div>
 
                     <div class="form-group col-lg-3">
-                        <label>Teléfono</label>
+                        <label>Teléfono de contacto</label>
                         <input type="text" name="telefono" id="telefono" class="form-control"
                             placeholder="Ingrese teléfono" required>
                     </div>
 
-                    <div class="form-group col-lg-3">
+                    
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h5><i class="fa fa-truck"></i> Datos para el Envío</h5>
+                <div class="row">
+                    <div class="form-group col-lg-4">
                         <label>Fecha de pedido</label>
                         <input type="date" name="fecha_pedido" class="form-control" value="{{ date('Y-m-d') }}"
                             readonly>
                     </div>
-
-                    <div class="form-group col-lg-3">
+                    <div class="form-group col-lg-4">
                         <label>Fecha de entrega</label>
                         <input type="date" name="fecha_entrega" id="fecha_entrega" class="form-control" required>
                     </div>
 
 
-                    <div class="form-group col-lg-3">
+                    <div class="form-group col-lg-4">
                         <label>Método de pago</label>
                         <select name="metodo_pago" class="form-control" required>
                             <option value="" disabled selected>Seleccione método...</option>
@@ -101,19 +107,6 @@
                             @endforeach
                         </select>
                     </div>
-
-                    <div class="form-group col-lg-6">
-                        <label>Rerefencia</label>
-                        <input type="text" name="referencia" id="telefono" class="form-control"
-                            placeholder="Ingrese Referencia" required>
-                    </div>
-
-                </div>
-            </div>
-
-            <div class="form-section">
-                <h5><i class="fa fa-truck"></i> Datos para el Envío</h5>
-                <div class="row">
                     <div class="form-group col-lg-4">
                         <label>Punto de llegada *</label>
                         <select name="punto_llegada" class="form-control" required>
@@ -123,7 +116,6 @@
                             <option value="cliente">Dirección del Cliente</option>
                         </select>
                     </div>
-
                     <div class="form-group col-lg-4">
                         <label>Ubigeo *</label>
                         <select name="ubigeo_envio" id="ubigeo_envio" class="form-control" required>
@@ -134,7 +126,11 @@
                             </option>
                             @endforeach
                         </select>
-
+                    </div>
+                    <div class="form-group col-lg-4">
+                        <label>Rerefencia</label>
+                        <input type="text" name="referencia" id="telefono" class="form-control"
+                            placeholder="Ingrese Referencia" required>
                     </div>
                     <div class="form-group col-lg-12">
                         <label>Buscar dirección *</label>
@@ -261,6 +257,7 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

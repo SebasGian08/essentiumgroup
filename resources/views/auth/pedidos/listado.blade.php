@@ -11,8 +11,8 @@
 @endsection
 
 @section('contenido')
-<div class="content-wrapper">
 
+<div class="content-wrapper">
     <section class="content-header d-flex justify-content-between align-items-center header-animado"
         style="padding: 15px 25px; border-bottom: 2px solid #e0e0e0; background: linear-gradient(to right, #5864ff, #646eff); border-radius: 8px;">
         <h1 style="font-family: 'Poppins', sans-serif; font-weight: 600; color: #fff; margin: 0; font-size: 1.8rem;">
@@ -46,8 +46,9 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Fechas</th>
-                        <!--  <th>Acciones</th> -->
+                        <th>Código</th>
+                        <th>Fecha registro</th>
+                        <th>Fecha entrega</th>
                         <th>Nota</th>
                         <th>Cliente</th>
                         <th>Producto(s)</th>
@@ -74,11 +75,13 @@ $(document).ready(function() {
     var table = $('#tablePedidos').DataTable({
         processing: true,
         serverSide: false,
+        scrollX: false,
+        scrollCollapse: true,
         responsive: true,
+        autoWidth: false,
         paging: true,
         pageLength: 10,
         lengthChange: true,
-        autoWidth: false,
         pagingType: 'simple_numbers',
         ajax: {
             url: "{{ route('auth.pedidos.list_all') }}",
@@ -89,99 +92,82 @@ $(document).ready(function() {
                 d.estado = $('#filtro_estado').val();
             }
         },
-        columns: [{ // 🔹 Columna correlativo
+        columns: [{ // #
                 data: null,
-                name: 'correlativo',
                 orderable: false,
                 searchable: false,
-                render: function(data, type, row, meta) {
-                    return meta.row +
-                        1; // Para serverSide: meta.row + meta.settings._iDisplayStart + 1
-                }
+                width: "50px",
+                render: (d, t, r, m) => m.row + 1
             },
-            { // Fechas
-                data: null,
-                name: 'fechas',
-                render: function(data, type, row) {
-                    return `Entrega: ${row.fecha_entrega ?? ''}<br>Pedido: ${row.fecha_pedido ?? ''}`;
-                }
+            { // Código pedido
+                data: 'codigo_pedido',
+                name: 'codigo_pedido',
+                width: "120px"
+            },
+            { // Fecha registro
+                data: 'fecha_pedido',
+                name: 'fecha_pedido',
+                width: "120px",
+                render: d => d ? d.split(' ')[0] : ''
+            },
+            { // Fecha entrega
+                data: 'fecha_entrega',
+                name: 'fecha_entrega',
+                width: "120px"
             },
             { // Comentario
                 data: 'comentario',
-                name: 'comentario',
+                width: "200px",
                 defaultContent: ''
             },
-            { // Cliente + WhatsApp
+            { // Cliente
                 data: 'nombre_cliente',
-                name: 'nombre_cliente',
+                width: "240px",
                 render: function(data, type, row) {
                     let telefono = row.telefono_cliente || '';
                     return `
-                    <div class="cliente-column">
-                        <div class="cliente-nombre">${data}</div>
-                        <a target="_blank" href="https://api.whatsapp.com/send?phone=${telefono}" class="cliente-whatsapp">
-                            <i class="fa fa-whatsapp"></i> ${telefono}
-                        </a>
-                    </div>
-                `;
+                <div class="cliente-column">
+                    <div class="cliente-nombre">${data}</div>
+                    <a target="_blank"
+                       href="https://api.whatsapp.com/send?phone=${telefono}"
+                       class="cliente-whatsapp">
+                        <i class="fa fa-whatsapp"></i> ${telefono}
+                    </a>
+                </div>`;
                 }
             },
             { // Productos
                 data: 'productos',
-                name: 'productos',
                 orderable: false,
                 searchable: false,
-                render: function(data, type, row) {
+                width: "280px",
+                render: function(data) {
                     if (!data || data.length === 0)
                         return '<span class="text-muted">Sin productos</span>';
 
-                    let html = '<div class="productos-column">';
-                    data.forEach(p => {
-                        html +=
-                            `<div class="producto-badge">${p.descripcion} (${p.cantidad})</div>`;
-                    });
-                    html += '</div>';
-                    return html;
+                    return data.map(p =>
+                        `<div class="producto-badge">${p.descripcion} (${p.cantidad})</div>`
+                    ).join('');
                 }
             },
             { // Total
                 data: 'total',
-                name: 'total',
-                render: function(data) {
-                    return `<span class="total-badge">S/ ${parseFloat(data || 0).toFixed(2)}</span>`;
-                }
+                width: "110px",
+                render: d => `<span class="total-badge">S/ ${parseFloat(d || 0).toFixed(2)}</span>`
             },
             { // Ubigeo
                 data: null,
-                name: 'ubigeo',
-                render: function(data, type, row) {
-                    const ubigeo =
-                        `${row.departamento || ''} - ${row.provincia || ''} - ${row.distrito || ''}`;
-                    return `
-                    <div class="ubigeo-column">
-                        <span class="ubigeo-text">${ubigeo}</span>
-                    </div>
-                `;
-                }
+                width: "220px",
+                render: r =>
+                    `${r.departamento || ''} - ${r.provincia || ''} - ${r.distrito || ''}`
             },
-            {
+            { // Estado
                 data: 'estado_seguimiento',
-                name: 'estado_seguimiento',
-                orderable: false,
-                searchable: false,
-                render: function(data) {
-                    if (!data) return '<span class="text-muted">Sin estado</span>';
-
-                    let text = data.replace(/_/g, ' ');
-                    text = text.charAt(0).toUpperCase() + text.slice(1);
-
-                    return `<div class="estado-pedido">${text}</div>`;
-                }
+                width: "130px",
+                render: d => d ?
+                    `<div class="estado-pedido">${d.replace('_', ' ')}</div>` :
+                    '<span class="text-muted">Sin estado</span>'
             }
-
-
-
-
         ],
         order: [
             [1, 'desc']

@@ -63,10 +63,10 @@
                     </div>
                     <div class="form-group col-md-6">
                         <label for="stock">Stock</label>
-                        <input type="number" class="form-input" name="stock" id="stock"
-                            value="{{ $Producto ? $Producto->stock : '0' }}" step="1" required> <span
-                            data-valmsg-for="stock" class="text-danger"></span>
+                        <input type="number" class="form-input" id="stock"
+                            value="{{ $Producto ? $Producto->stock : '0' }}" step="1" disabled>
                     </div>
+
                     <div class="form-group col-md-6">
                         <label for="estado">Estado</label>
                         <select class="form-input" name="estado" id="estado" required>

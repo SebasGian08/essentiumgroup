@@ -72,7 +72,7 @@
                 @csrf
                 <input type="hidden" id="g_id_pedido">
 
-                <div class="modal-header bg-primary text-white">
+                <div class="modal-header text-white">
                     <h5 class="modal-title">Reprogramar Pedido</h5>
                     <button class="close text-black" data-dismiss="modal">&times;</button>
                 </div>

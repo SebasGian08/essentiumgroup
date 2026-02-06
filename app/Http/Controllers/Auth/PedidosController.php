@@ -283,6 +283,7 @@ class PedidosController extends Controller
 
             ->select(
                 'pedidos.id_pedido',
+                'pedidos.codigo_pedido',
                 'pedidos.nombre_cliente',
                 'pedidos.fecha_entrega',
                 'pedidos.fecha_pedido',
@@ -477,20 +478,39 @@ class PedidosController extends Controller
             ->leftJoin('ubigeos as ub', 'ub.id_ubigeo', '=', 'p.ubigeo_envio')
             ->where('p.id_pedido', $id_pedido)
             ->select(
-                'p.id_pedido','p.codigo_pedido','p.nombre_cliente','p.direccion_cliente',
-                'p.telefono_cliente','p.fecha_entrega','p.direccion_envio',
-                'ub.departamento','ub.provincia','ub.distrito','p.total'
-            )->first();
+                'p.id_pedido',
+                'p.codigo_pedido',
+                'p.nombre_cliente',
+                'p.direccion_cliente',
+                'p.telefono_cliente',
+                'p.fecha_entrega',
+                'p.direccion_envio',
+                'ub.departamento',
+                'ub.provincia',
+                'ub.distrito',
+                'p.total'
+            )
+            ->first();
 
         $detalles = DB::table('pedidos_detalle as pd')
             ->join('productos as prod', 'prod.id_producto', '=', 'pd.id_producto')
             ->where('pd.id_pedido', $id_pedido)
-            ->select('prod.codigo_producto','prod.descripcion','pd.cantidad','pd.precio_unitario')
+            ->select(
+                'prod.codigo_producto',
+                'prod.descripcion',
+                'pd.cantidad',
+                'pd.precio_unitario'
+            )
             ->get();
 
-        $pdf = PDF::loadView('auth.pedidos.guia', compact('pedido','detalles'));
-        return $pdf->download("Guia_{$pedido->codigo_pedido}.pdf");
+        // 📅 Formato seguro para nombre de archivo
+        $fecha = \Carbon\Carbon::parse($pedido->fecha_entrega)->format('Ymd');
+
+        $pdf = PDF::loadView('auth.pedidos.guia', compact('pedido', 'detalles'));
+
+        return $pdf->download("Guia_{$pedido->codigo_pedido}_{$fecha}.pdf");
     }
+
 
     public function entregar(Request $request)
     {

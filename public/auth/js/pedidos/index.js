@@ -45,18 +45,72 @@ $(document).ready(function () {
     $(document).on("click", ".btn-add", function () {
 
         const card = $(this).closest(".producto-card");
+
         const id = card.data("id");
         const nombre = card.data("nombre");
         const precio = parseFloat(card.data("precio")) || 0;
         const cantidad = parseInt(card.find(".cantidad").val()) || 0;
+        const stock = parseInt(card.data("stock")) || 0;
+        const reservado = parseInt(card.data("reservado")) || 0;
+        const disponible = stock - reservado;
 
-        if (cantidad <= 0) return;
+        // 📦 stock disponible desde el texto
+        const stockDisponible = parseInt(
+            card.find(".stock-disponible").text().replace(/\D/g, "")
+        ) || 0;
+
+        if (cantidad <= 0) {
+            return Swal.fire({
+                icon: 'warning',
+                title: 'Cantidad inválida',
+                text: 'Ingrese una cantidad mayor a cero'
+            });
+        }
+
+        if (disponible <= 0) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Sin stock',
+                text: 'No hay stock disponible para este producto'
+            });
+            return;
+        }
+
+        if (cantidad > disponible) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Stock insuficiente',
+                text: `Solo hay ${disponible} unidades disponibles`
+            });
+            return;
+        }
+
 
         const filaExistente = $("#ticket-table tbody tr[data-id='" + id + "']");
 
+        // 🧮 cantidad ya agregada
+        let cantidadActual = 0;
+        if (filaExistente.length > 0) {
+            cantidadActual = parseInt(filaExistente.find(".cant-item").text()) || 0;
+        }
+
+        const nuevaCantidad = cantidadActual + cantidad;
+
+        // 🚫 no permitir pasar el stock
+        if (nuevaCantidad > stockDisponible) {
+            return Swal.fire({
+                icon: 'warning',
+                title: 'Stock insuficiente',
+                html: `
+                <b>Disponible:</b> ${stockDisponible} <br>
+                <b>Intentas agregar:</b> ${nuevaCantidad}
+            `
+            });
+        }
+
+        // ✅ actualizar fila existente
         if (filaExistente.length > 0) {
 
-            const nuevaCantidad = parseInt(filaExistente.find(".cant-item").text()) + cantidad;
             filaExistente.find(".cant-item").text(nuevaCantidad);
             filaExistente.find(".total-item").text((nuevaCantidad * precio).toFixed(2));
             filaExistente.find('input[name$="[cantidad]"]').val(nuevaCantidad);
@@ -66,27 +120,37 @@ $(document).ready(function () {
             const index = $("#ticket-table tbody tr").length;
 
             const fila = `
-                <tr data-id="${id}">
-                    <td>
-                        ${nombre}
-                        <input type="hidden" name="productos[${index}][id_producto]" value="${id}">
-                        <input type="hidden" name="productos[${index}][cantidad]" value="${cantidad}">
-                        <input type="hidden" name="productos[${index}][precio]" value="${precio}">
-                    </td>
-                    <td class="cant-item">${cantidad}</td>
-                    <td>${precio.toFixed(2)}</td>
-                    <td class="total-item">${(cantidad * precio).toFixed(2)}</td>
-                    <td>
-                        <button type="button" class="btn btn-danger btn-sm btn-remove">X</button>
-                    </td>
-                </tr>
-            `;
+            <tr data-id="${id}">
+                <td>
+                    ${nombre}
+                    <input type="hidden" name="productos[${index}][id_producto]" value="${id}">
+                    <input type="hidden" name="productos[${index}][cantidad]" value="${cantidad}">
+                    <input type="hidden" name="productos[${index}][precio]" value="${precio}">
+                </td>
+                <td class="cant-item">${cantidad}</td>
+                <td>${precio.toFixed(2)}</td>
+                <td class="total-item">${(cantidad * precio).toFixed(2)}</td>
+                <td>
+                    <button type="button" class="btn btn-danger btn-sm btn-remove">X</button>
+                </td>
+            </tr>
+        `;
 
             $("#ticket-table tbody").append(fila);
         }
 
+        // ⚠️ aviso si queda poco stock
+        if (stockDisponible - nuevaCantidad <= 5) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Stock limitado',
+                text: 'Quedan pocas unidades disponibles'
+            });
+        }
+
         actualizarTotales();
     });
+
 
     /* ===============================
        PAGINACIÓN
