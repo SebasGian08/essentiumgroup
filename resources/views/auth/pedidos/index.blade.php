@@ -138,10 +138,22 @@
                     </div>
                     <div class="form-group col-lg-12">
                         <label>Buscar dirección *</label>
-                        <input type="text" id="direccion_envio" name="direccion_envio" class="form-control"
-                            placeholder="Ej: Av. Arequipa 123, Lima (ENTER)" autocomplete="off">
+
+                        <div class="input-group">
+                            <input type="text" id="direccion_envio" name="direccion_envio" class="form-control"
+                                placeholder="Ej: Av. Arequipa 123, Lima (ENTER)" autocomplete="off">
+
+                            <div class="input-group-append">
+                                <button type="button" id="btnMiUbicacion" class="btn btn-primary"
+                                    title="Usar mi ubicación">
+                                    <i class="fa fa-crosshairs"></i>
+                                </button>
+                            </div>
+                        </div>
+
                         <small id="estado_busqueda" class="text-muted"></small>
                     </div>
+
 
 
                     <div class="form-group col-lg-12">
@@ -397,7 +409,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     cache[q] = data[0];
                     setCoords(data[0].lat, data[0].lon, false);
                 } else {
-                    alert('No se encontró la dirección');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Ubicación no detectada',
+                        text: 'No se pudo obtener tu ubicación actual. Verifica los permisos.'
+                    });
                 }
             });
     });
@@ -411,6 +427,45 @@ document.addEventListener('DOMContentLoaded', function() {
     marker.on('dragend', e => {
         const pos = e.target.getLatLng();
         setCoords(pos.lat, pos.lng);
+    });
+
+    $('#btnMiUbicacion').on('click', function() {
+
+        if (!navigator.geolocation) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Geolocalización no disponible',
+                text: 'Tu navegador no soporta obtener la ubicación actual.'
+            });
+            return;
+        }
+
+        const btn = $(this);
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                setCoords(lat, lng);
+
+                btn.prop('disabled', false).html('<i class="fa fa-crosshairs"></i>');
+            },
+            function() {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Ubicación no detectada',
+                    text: 'No se pudo obtener tu ubicación. Revisa los permisos del navegador.'
+                });
+
+                btn.prop('disabled', false).html('<i class="fa fa-crosshairs"></i>');
+            }, {
+                enableHighAccuracy: true,
+                timeout: 10000
+            }
+        );
     });
 
 });
