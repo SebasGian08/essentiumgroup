@@ -50,9 +50,10 @@ $(document).ready(function () {
         const nombre = card.data("nombre");
         const precio = parseFloat(card.data("precio")) || 0;
         const cantidad = parseInt(card.find(".cantidad").val()) || 0;
-        const stock = parseInt(card.data("stock")) || 0;
-        const reservado = parseInt(card.data("reservado")) || 0;
-        const disponible = stock - reservado;
+        const disponible = parseInt(
+            card.find(".stock-disponible").text().replace(/\D/g, "")
+        ) || 0;
+
 
         // 📦 stock disponible desde el texto
         const stockDisponible = parseInt(
@@ -84,6 +85,7 @@ $(document).ready(function () {
             });
             return;
         }
+
 
 
         const filaExistente = $("#ticket-table tbody tr[data-id='" + id + "']");

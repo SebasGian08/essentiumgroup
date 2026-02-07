@@ -43,10 +43,11 @@ class PedidosController extends Controller
         $productos = Producto::where('estado', 1)
             ->whereNull('deleted_at')
             ->get()
-            ->map(function($p) {
+            ->map(function ($p) {
+
                 $reservado = DB::table('stock_reservado')
                     ->where('id_producto', $p->id_producto)
-                    ->where('estado', 'RESERVADO')
+                    ->whereIn('estado', ['RESERVADO', 'PREPARADO'])
                     ->sum('cantidad');
 
                 $p->stock_reservado = $reservado;
@@ -54,6 +55,7 @@ class PedidosController extends Controller
 
                 return $p;
             });
+
 
         return view('auth.pedidos.index', compact('userId', 'users', 'metodosPago', 'ubigeos', 'productos'));
     }
@@ -342,17 +344,32 @@ class PedidosController extends Controller
         $pedidos = DB::table('pedidos as p')
             ->leftJoin('users as u', 'u.id', '=', 'p.id_usuario')
             ->leftJoin('ubigeos as ub', 'ub.id_ubigeo', '=', 'p.ubigeo_envio')
-            ->leftJoin(DB::raw('(SELECT pd.id_pedido, GROUP_CONCAT(CONCAT(prod.descripcion, " (", pd.cantidad, ")")) as productos
-                                FROM pedidos_detalle pd
-                                JOIN productos prod ON pd.id_producto = prod.id_producto
-                                GROUP BY pd.id_pedido) as pdp'), 'pdp.id_pedido', '=', 'p.id_pedido')
+            ->leftJoin(DB::raw('(SELECT pd.id_pedido,
+                    GROUP_CONCAT(CONCAT(prod.descripcion, " (", pd.cantidad, ")")) as productos
+                FROM pedidos_detalle pd
+                JOIN productos prod ON pd.id_producto = prod.id_producto
+                GROUP BY pd.id_pedido) as pdp'),
+                'pdp.id_pedido', '=', 'p.id_pedido'
+            )
             ->where('p.id_usuario', $userId)
-            ->where('p.estado_pedido', 'PENDIENTE') // <-- FILTRO SOLO PENDIENTES
+
+            ->when($request->estado, function ($q) use ($request) {
+                $q->where('p.estado_pedido', $request->estado);
+            })
+
+            ->when($request->fecha_inicio, function ($q) use ($request) {
+                $q->whereDate('p.created_at', '>=', $request->fecha_inicio);
+            })
+            ->when($request->fecha_fin, function ($q) use ($request) {
+                $q->whereDate('p.created_at', '<=', $request->fecha_fin);
+            })
+
             ->select(
                 'p.id_pedido',
                 'p.codigo_pedido',
                 'p.fecha_pedido',
                 'p.total',
+                'p.estado_pedido',
                 'u.nombres as nombre_usuario',
                 'ub.departamento',
                 'ub.provincia',
@@ -364,6 +381,7 @@ class PedidosController extends Controller
 
         return response()->json(['data' => $pedidos]);
     }
+
 
 
     public function gestionGet(Request $request)

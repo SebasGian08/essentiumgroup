@@ -162,7 +162,7 @@
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" href="{{ route('auth.pedidos.gestion') }}">
-                                        <i class="fa fa-shopping-cart mr-2"></i> Despacho de Pedidos
+                                        <i class="fa fa-shopping-cart mr-2"></i> Aprobación de Pedidos
                                     </a>
                                 </li>
                                 <li class="nav-item">

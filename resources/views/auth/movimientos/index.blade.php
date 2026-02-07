@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="{{ asset('auth/plugins/datatable/datatables.min.css') }}">
 <link rel="stylesheet" href="{{ asset('app/assets_pedidos/style.css') }}">
 <link rel="stylesheet" href="{{ asset('app/assets_pedidos/listado.css') }}">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
 .stock-bajo {
     color: red;
@@ -54,6 +55,7 @@
                     @endforeach
                 </select>
             </div>
+
             <div class="col-md-2">
                 <select id="tipo_movimiento" class="form-control">
                     <option value="">Todos los tipos</option>
@@ -103,9 +105,15 @@
 
 @section('scripts')
 <script src="{{ asset('auth/plugins/datatable/datatables.min.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
 $(document).ready(function() {
-
+    $('#producto_id').select2({
+        placeholder: 'Buscar producto...',
+        allowClear: true,
+        width: '100%'
+    });
     var table = $('#tableMovimientos').DataTable({
         processing: true,
         serverSide: false,

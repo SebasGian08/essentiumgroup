@@ -40,8 +40,8 @@ class KardexValorizadoExport implements
             'Producto',
             'Tipo Movimiento',
             'Motivo Movimiento',
-            'Cantidad Ingreso',
-            'Cantidad Salida',
+            'Cantidad',
+            'Cantidad Anterior',
             'Cantidad Saldo',
             'Costo Unitario',
             'Costo Total'

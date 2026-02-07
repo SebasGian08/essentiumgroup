@@ -47,6 +47,31 @@
         </h1>
     </section>
     <br>
+    <div class="row mb-3 form-section">
+        <div class="col-md-3">
+            <input type="date" id="fecha_inicio" class="form-control">
+        </div>
+
+        <div class="col-md-3">
+            <input type="date" id="fecha_fin" class="form-control">
+        </div>
+
+        <div class="col-md-3">
+            <select id="filtro_estado" class="form-control">
+                <option value="VALIDADO">Validado</option>
+                <option value="REPROGRAMADO">Reprogramado</option>
+                <option value="ENTREGADO">Entregado</option>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <button id="btn-filtrar" class="btn btn-light-custom">
+                <i class="fa fa-search"></i> Filtrar
+            </button>
+        </div>
+    </div>
+
+    <hr>
     <div class="form-section">
         <table id="tableMotorizado" class="table table-striped table-bordered" style="width:100%">
             <thead>
@@ -127,10 +152,17 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+let tablaMotorizado;
+
 $(function() {
-    $('#tableMotorizado').DataTable({
+    tablaMotorizado = $('#tableMotorizado').DataTable({
         ajax: {
             url: "{{ route('auth.motorizado.list') }}",
+            data: function(d) {
+                d.fecha_inicio = $('#fecha_inicio').val();
+                d.fecha_fin = $('#fecha_fin').val();
+                d.estado = $('#filtro_estado').val();
+            },
             dataSrc: 'data'
         },
         columns: [{
@@ -155,17 +187,52 @@ $(function() {
             },
             {
                 data: null,
-                render: d => `
-                <button class="btn-gestionar" onclick="abrirGestion(${d.id_pedido})">Reprogramar</button>
-                <a href="/auth/pedidos/${d.id_pedido}/guia" class="btn btn-dark btn-sm" target="_blank" style="border-radius: 25px;">Descargar Guía</a>
-                <button class="btn btn-success btn-sm" style="border-radius:25px;" onclick="entregarPedido(${d.id_pedido})">Entregar</button>
-            `
-            }
+                render: d => {
 
+                    const estado = (d.estado_pedido || '').trim().toUpperCase();
+
+
+                    if (estado === 'ENTREGADO') {
+                        return `
+                <a href="/auth/pedidos/${d.id_pedido}/guia"
+                    class="btn btn-dark btn-sm ml-1"
+                    target="_blank"
+                    style="border-radius:25px;">
+                    Guía
+                </a>
+            `;
+                    }
+
+                    return `
+            <button class="btn-gestionar"
+                onclick="abrirGestion(${d.id_pedido})">
+                Reprogramar
+            </button>
+
+            <a href="/auth/pedidos/${d.id_pedido}/guia"
+                class="btn btn-dark btn-sm"
+                target="_blank"
+                style="border-radius:25px;">
+                Guía
+            </a>
+
+            <button class="btn btn-success btn-sm"
+                style="border-radius:25px;"
+                onclick="entregarPedido(${d.id_pedido})">
+                Entregar
+            </button>
+        `;
+                }
+            }
 
         ]
     });
 });
+
+$('#btn-filtrar').on('click', function() {
+    tablaMotorizado.ajax.reload();
+});
+
 
 function abrirGestion(id) {
     $('#modalGestionPedido').modal('show');

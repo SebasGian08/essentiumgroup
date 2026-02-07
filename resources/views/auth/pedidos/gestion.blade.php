@@ -62,10 +62,32 @@
 <div class="content-wrapper">
     <section class="content-header" style="padding:15px; background:linear-gradient(90deg,#5864ff,#646eff); color:#fff">
         <h1 style="font-family: 'Poppins', sans-serif; font-weight: 600; color: #fff; margin: 0; font-size: 1.8rem;">
-            <i class="fa fa-shopping-cart" style="margin-right: 8px;"></i> Despacho de Pedidos
+            <i class="fa fa-shopping-cart" style="margin-right: 8px;"></i> Aprobación de Pedidos
         </h1>
     </section>
     <br>
+    <div class="row mb-3 form-section">
+        <div class="col-md-3">
+            <input type="date" id="fecha_inicio" class="form-control">
+        </div>
+        <div class="col-md-3">
+            <input type="date" id="fecha_fin" class="form-control">
+        </div>
+        <div class="col-md-3">
+            <select id="filtro_estado" class="form-control">
+                <option value="PENDIENTE">Pendiente</option>
+                <option value="VALIDADO">Validado</option>
+                <option value="ENTREGADO">Entregado</option>
+                <option value="">Todos los estados</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button id="btn-filtrar" class="btn btn-light-custom">
+                <i class="fa fa-search"></i> Filtrar
+            </button>
+        </div>
+    </div>
+
     <hr>
     <div class="form-section">
         <table id="tableGestionPedidos" class="table table-striped table-bordered" style="width:100%">
@@ -146,10 +168,17 @@
 
 <script>
 //Listar Pedidos para Gestión
+let tabla;
+
 $(function() {
-    $('#tableGestionPedidos').DataTable({
+    tabla = $('#tableGestionPedidos').DataTable({
         ajax: {
             url: "{{ route('auth.pedidos.gestion_list') }}",
+            data: function(d) {
+                d.fecha_inicio = $('#fecha_inicio').val();
+                d.fecha_fin = $('#fecha_fin').val();
+                d.estado = $('#filtro_estado').val();
+            },
             dataSrc: 'data'
         },
         columns: [{
@@ -171,14 +200,44 @@ $(function() {
             },
             {
                 data: null,
-                render: d => `
-                <button class="btn-gestionar" onclick="abrirGestion(${d.id_pedido})">Gestionar</button>
-                <button class="btn btn-dark btn-sm" style="border-radius: 25px;" onclick="verDetalle(${d.id_pedido})">Ver</button>
-            `
+                render: d => {
+
+                    // Normalizamos por seguridad
+                    const estado = (d.estado_pedido || '').trim().toUpperCase();
+
+                    // SOLO PENDIENTE
+                    if (estado === 'PENDIENTE') {
+                        return `
+                <button class="btn-gestionar"
+                    onclick="abrirGestion(${d.id_pedido})">
+                    Gestionar
+                </button>
+
+                <button class="btn btn-dark btn-sm"
+                    style="border-radius:25px;"
+                    onclick="verDetalle(${d.id_pedido})">
+                    Ver
+                </button>
+            `;
+                    }
+
+                    return `
+                    <button class="btn btn-dark btn-sm"
+                        style="border-radius:25px;"
+                        onclick="verDetalle(${d.id_pedido})">
+                        Ver
+                    </button>
+                `;
+                }
             }
+
         ]
     });
 });
+$('#btn-filtrar').on('click', function() {
+    tabla.ajax.reload();
+});
+
 
 //Abrir Modal de Gestión
 function abrirGestion(id) {
