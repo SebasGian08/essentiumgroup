@@ -762,7 +762,7 @@ class PedidosController extends Controller
                 DB::table('kardex')->insert([
                     'id_producto' => $r->id_producto,
                     'fecha_movimiento' => now(),
-                    'tipo_movimiento' => 'S',
+                    'id_tipo_movimiento' => 2, //SALIDA_ENTREGA
                     'motivo' => 'ENTREGA PEDIDO',
                     'id_origen' => $idPedido,
                     'cantidad' => $r->cantidad,

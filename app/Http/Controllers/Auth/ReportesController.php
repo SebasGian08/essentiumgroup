@@ -59,6 +59,7 @@ class ReportesController extends Controller
     {
         $inicio = $request->inicio;
         $fin    = $request->fin;
+        $tipoMovimiento = $request->tipo_movimiento ?? null; // nuevo parámetro opcional
 
         if (empty($inicio) || empty($fin)) {
             abort(400, 'Debe seleccionar un rango de fechas');
@@ -74,7 +75,7 @@ class ReportesController extends Controller
 
             case 'kardex':
                 return Excel::download(
-                    new KardexValorizadoExport($inicio, $fin),
+                    new KardexValorizadoExport($inicio, $fin, $tipoMovimiento),
                     'reporte_kardex.xlsx'
                 );
 
@@ -94,4 +95,5 @@ class ReportesController extends Controller
                 abort(404);
         }
     }
+
 }

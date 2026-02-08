@@ -10,27 +10,14 @@
 <link rel="stylesheet" href="{{ asset('app/assets_pedidos/listado.css') }}">
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
-.stock-bajo {
-    color: red;
-    font-weight: 600;
-}
-
-.entrada {
-    background-color: #d4edda;
-}
-
-/* verde suave */
-.salida {
-    background-color: #f8d7da;
-}
-
-/* rojo suave */
+.stock-bajo { color: red; font-weight: 600; }
+.entrada { background-color: #d4edda; } /* verde suave */
+.salida { background-color: #f8d7da; }  /* rojo suave */
 </style>
 @endsection
 
 @section('contenido')
 <div class="content-wrapper">
-
     <section class="content-header d-flex justify-content-between align-items-center header-animado"
         style="padding: 15px 25px; border-bottom: 2px solid #e0e0e0; background: linear-gradient(to right, #5864ff, #646eff); border-radius: 8px;">
         <h1 style="font-family: 'Poppins', sans-serif; font-weight: 600; color: #fff; margin: 0; font-size: 1.8rem;">
@@ -41,17 +28,13 @@
     <br>
     <div class="content">
         <div class="row mb-3 form-section">
-            <div class="col-md-2">
-                <input type="date" id="fecha_inicio" class="form-control" placeholder="Fecha Inicio">
-            </div>
-            <div class="col-md-2">
-                <input type="date" id="fecha_fin" class="form-control" placeholder="Fecha Fin">
-            </div>
+            <div class="col-md-2"><input type="date" id="fecha_inicio" class="form-control" placeholder="Fecha Inicio"></div>
+            <div class="col-md-2"><input type="date" id="fecha_fin" class="form-control" placeholder="Fecha Fin"></div>
             <div class="col-md-3">
                 <select id="producto_id" class="form-control">
                     <option value="">Todos los productos</option>
                     @foreach($productos as $prod)
-                    <option value="{{ $prod->id_producto }}">{{ $prod->descripcion }}</option>
+                        <option value="{{ $prod->id_producto }}">{{ $prod->descripcion }}</option>
                     @endforeach
                 </select>
             </div>
@@ -59,23 +42,23 @@
             <div class="col-md-2">
                 <select id="tipo_movimiento" class="form-control">
                     <option value="">Todos los tipos</option>
-                    @foreach($tipos as $key => $label)
-                    <option value="{{ $key }}">{{ $label }}</option>
+                    @foreach($tipos as $tipo)
+                        <option value="{{ $tipo->id_tipo_movimiento }}">{{ $tipo->nombre }}</option>
                     @endforeach
                 </select>
             </div>
+
             <div class="col-md-2">
                 <select id="motivo" class="form-control">
                     <option value="">Todos los motivos</option>
                     @foreach($motivos as $motivo)
-                    <option value="{{ $motivo }}">{{ $motivo }}</option>
+                        <option value="{{ $motivo }}">{{ $motivo }}</option>
                     @endforeach
                 </select>
             </div>
+
             <div class="col-md-1">
-                <button id="btn-filtrar" class="btn btn-light-custom btn-m">
-                    <i class="fa fa-search"></i> Buscar
-                </button>
+                <button id="btn-filtrar" class="btn btn-light-custom btn-m"><i class="fa fa-search"></i> Buscar</button>
             </div>
         </div>
 
@@ -106,14 +89,11 @@
 @section('scripts')
 <script src="{{ asset('auth/plugins/datatable/datatables.min.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
 <script>
 $(document).ready(function() {
-    $('#producto_id').select2({
-        placeholder: 'Buscar producto...',
-        allowClear: true,
-        width: '100%'
-    });
+    $('#producto_id').select2({ placeholder: 'Buscar producto...', allowClear: true, width: '100%' });
+    $('#tipo_movimiento').select2({ placeholder: 'Tipo movimiento', allowClear: true, width: '100%' });
+
     var table = $('#tableMovimientos').DataTable({
         processing: true,
         serverSide: false,
@@ -125,65 +105,34 @@ $(document).ready(function() {
                 d.fecha_inicio = $('#fecha_inicio').val();
                 d.fecha_fin = $('#fecha_fin').val();
                 d.producto_id = $('#producto_id').val();
-                d.tipo_movimiento = $('#tipo_movimiento').val();
+                d.id_tipo_movimiento = $('#tipo_movimiento').val();
                 d.motivo = $('#motivo').val();
             }
         },
-        columns: [{
-                data: null,
-                render: (data, type, row, meta) => meta.row + 1
-            },
-            {
-                data: 'fecha_movimiento',
-                name: 'fecha_movimiento'
-            },
-            {
-                data: 'producto',
-                name: 'producto'
-            },
-            {
+        columns: [
+            { data: null, render: (data, type, row, meta) => meta.row + 1 },
+            { data: 'fecha_movimiento', name: 'fecha_movimiento' },
+            { data: 'producto', name: 'producto' },
+            { 
                 data: 'tipo_movimiento',
-                render: function(d) {
-                    if (d === 'E') return '<span class="entrada">Entrada</span>';
-                    if (d === 'S') return '<span class="salida">Salida</span>';
-                    return d;
+                render: function(d, type, row) {
+                    let clase = '';
+                    if (row.codigo === 'E') clase = 'entrada';
+                    if (row.codigo === 'S') clase = 'salida';
+                    return `<span class="${clase}">${d}</span>`;
                 }
             },
-            {
-                data: 'motivo',
-                name: 'motivo'
-            },
-            {
-                data: 'cantidad',
-                name: 'cantidad'
-            },
-            {
-                data: 'stock_anterior',
-                name: 'stock_anterior'
-            },
-            {
-                data: 'stock_nuevo',
-                render: d => `<span class="${d <= 0 ? 'stock-bajo' : ''}">${d}</span>`
-            },
-            {
-                data: 'costo_unitario',
-                render: d => 'S/ ' + parseFloat(d || 0).toFixed(2)
-            },
-            {
-                data: 'costo_total',
-                render: d => 'S/ ' + parseFloat(d || 0).toFixed(2)
-            },
+            { data: 'motivo', name: 'motivo' },
+            { data: 'cantidad', name: 'cantidad' },
+            { data: 'stock_anterior', name: 'stock_anterior' },
+            { data: 'stock_nuevo', render: d => `<span class="${d <= 0 ? 'stock-bajo' : ''}">${d}</span>` },
+            { data: 'costo_unitario', render: d => 'S/ ' + parseFloat(d || 0).toFixed(2) },
+            { data: 'costo_total', render: d => 'S/ ' + parseFloat(d || 0).toFixed(2) }
         ],
-
-        order: [
-            [1, 'desc']
-        ]
+        order: [[1, 'desc']]
     });
 
-    $('#btn-filtrar').click(function() {
-        table.ajax.reload();
-    });
-
+    $('#btn-filtrar').click(function() { table.ajax.reload(); });
 });
 </script>
 @endsection

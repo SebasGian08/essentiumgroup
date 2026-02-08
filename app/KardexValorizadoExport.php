@@ -18,18 +18,20 @@ class KardexValorizadoExport implements
 {
     protected $inicio;
     protected $fin;
+    protected $tipoMovimiento;
 
-    public function __construct($inicio, $fin)
+    public function __construct($inicio, $fin, $tipoMovimiento = null)
     {
         $this->inicio = $inicio;
         $this->fin = $fin;
+        $this->tipoMovimiento = $tipoMovimiento;
     }
 
     public function collection()
     {
         return collect(DB::select(
-            'CALL sp_excel_kardex(?, ?)',
-            [$this->inicio, $this->fin]
+            'CALL sp_excel_kardex_listado(?, ?, ?)',
+            [$this->inicio, $this->fin, $this->tipoMovimiento]
         ));
     }
 
@@ -39,7 +41,8 @@ class KardexValorizadoExport implements
             'Fecha Movimiento',
             'Producto',
             'Tipo Movimiento',
-            'Motivo Movimiento',
+            /* 'Código Tipo',
+            'Motivo Movimiento', */
             'Cantidad',
             'Cantidad Anterior',
             'Cantidad Saldo',
@@ -77,15 +80,13 @@ class KardexValorizadoExport implements
                 /* =====================
                    FORMATO NUMÉRICO
                    ===================== */
-                $sheet->getStyle("E2:G{$lastRow}")
+                $sheet->getStyle("F2:H{$lastRow}")
                     ->getNumberFormat()
                     ->setFormatCode(NumberFormat::FORMAT_NUMBER);
 
-                $sheet->getStyle("H2:I{$lastRow}")
+                $sheet->getStyle("I2:J{$lastRow}")
                     ->getNumberFormat()
                     ->setFormatCode('"S/ " #,##0.00');
-
-
             }
         ];
     }

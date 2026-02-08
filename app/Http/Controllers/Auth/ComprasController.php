@@ -26,10 +26,22 @@ class ComprasController extends Controller
 
     public function store(Request $request)
     {
+        // 1. Validación de campos
+        $request->validate([
+            'id_proveedor' => 'required|exists:proveedor,id_proveedor',
+            'tipo_documento' => 'required|string',
+            'numero_documento' => 'required|string',
+            'fecha_compra' => 'required|date',
+            'total' => 'required|numeric|min:0',
+            'detalle' => 'required|array|min:1',
+            'detalle.*.id_producto' => 'required|exists:productos,id_producto',
+            'detalle.*.cantidad' => 'required|numeric|min:1',
+            'detalle.*.costo' => 'required|numeric|min:0',
+        ]);
+
         DB::beginTransaction();
         try {
-
-            // 1. REGISTRAR COMPRA
+            // REGISTRAR COMPRA
             $idCompra = DB::table('compra')->insertGetId([
                 'id_proveedor'      => $request->id_proveedor,
                 'tipo_documento'    => $request->tipo_documento,
@@ -38,58 +50,64 @@ class ComprasController extends Controller
                 'total'             => $request->total,
                 'observacion'       => $request->observacion,
                 'estado'            => 1,
-                'created_at'        => now()
+                'created_at'        => now(),
             ]);
 
-            // 2. DETALLE + KARDEX
+            // DETALLE + KARDEX
             foreach ($request->detalle as $item) {
-
-                // detalle
-                DB::table('compra_detalle')->insert([
-                    'id_compra'     => $idCompra,
-                    'id_producto'   => $item['id_producto'],
-                    'cantidad'      => $item['cantidad'],
-                    'costo_unitario'=> $item['costo'],
-                    'subtotal'      => $item['subtotal']
-                ]);
-
-                // stock actual
                 $producto = DB::table('productos')
                     ->where('id_producto', $item['id_producto'])
                     ->lockForUpdate()
                     ->first();
 
+                if (!$producto) {
+                    throw new \Exception("El producto ID {$item['id_producto']} no existe.");
+                }
+
                 $stockAnterior = $producto->stock;
                 $stockNuevo    = $stockAnterior + $item['cantidad'];
 
-                // kardex (ENTRADA)
-                DB::table('kardex')->insert([
-                    'id_producto'      => $item['id_producto'],
-                    'fecha_movimiento' => now(),
-                    'tipo_movimiento'  => 'E',
-                    'motivo'           => 'COMPRA',
-                    'id_origen'        => $idCompra,
-                    'cantidad'         => $item['cantidad'],
-                    'stock_anterior'   => $stockAnterior,
-                    'stock_nuevo'      => $stockNuevo,
-                    'costo_unitario'   => $item['costo'],
-                    'costo_total'      => $item['cantidad'] * $item['costo']
+                // Insert detalle
+                DB::table('compra_detalle')->insert([
+                    'id_compra'      => $idCompra,
+                    'id_producto'    => $item['id_producto'],
+                    'cantidad'       => $item['cantidad'],
+                    'costo_unitario' => round($item['costo'], 2),
+                    'subtotal'       => round($item['cantidad'] * $item['costo'], 2),
                 ]);
 
-                // actualizar stock
+                // Insert kardex (ENTRADA)
+                DB::table('kardex')->insert([
+                    'id_producto'        => $item['id_producto'],
+                    'fecha_movimiento'   => now(),
+                    'id_tipo_movimiento' => 1, // ENTRADA_COMPRA
+                    'motivo'             => 'COMPRA',
+                    'id_origen'          => $idCompra,
+                    'cantidad'           => $item['cantidad'],
+                    'stock_anterior'     => $stockAnterior,
+                    'stock_nuevo'        => $stockNuevo,
+                    'costo_unitario'     => round($item['costo'], 2),
+                    'costo_total'        => round($item['cantidad'] * $item['costo'], 2),
+                ]);
+
+
+                // Actualizar stock
                 DB::table('productos')
                     ->where('id_producto', $item['id_producto'])
                     ->update(['stock' => $stockNuevo]);
             }
 
             DB::commit();
-            return redirect()->back()->with('success','Compra registrada correctamente');
 
+            return redirect()->back()->with('success', 'Compra registrada correctamente');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors($e->getMessage());
+
+            // Retornar error a la sesión para mostrarlo en la vista
+            return redirect()->back()->withInput()->withErrors(['error' => $e->getMessage()]);
         }
     }
+
 
     public function list_all(Request $request)
     {
