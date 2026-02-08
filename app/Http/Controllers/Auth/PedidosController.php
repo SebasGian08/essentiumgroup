@@ -230,7 +230,7 @@ class PedidosController extends Controller
                 'evidencia_chat' => 0,
                 'evidencia_llamada_chat' => 0,
                 'evidencia_entrega' => 0,
-                'evidencia_soporte' => 0,
+                'evidencia_guia' => 0,
                 'created_at' => now(),
             ]);
 
@@ -368,6 +368,7 @@ class PedidosController extends Controller
                 'p.id_pedido',
                 'p.codigo_pedido',
                 'p.fecha_pedido',
+                'p.fecha_entrega',
                 'p.total',
                 'p.estado_pedido',
                 'u.nombres as nombre_usuario',
@@ -396,6 +397,7 @@ class PedidosController extends Controller
                 'p.nombre_cliente as cliente',
                 'p.total',
                 'p.fecha_pedido',
+                'p.fecha_entrega',
                 'u.nombres as nombre_usuario',
                 'u.email as email_usuario',
                 'u.telefono as telefono_usuario',
@@ -435,6 +437,7 @@ class PedidosController extends Controller
                 'distrito' => $pedido->distrito,
                 'total' => $pedido->total,
                 'fecha_pedido' => $pedido->fecha_pedido,
+                'fecha_entrega' => $pedido->fecha_entrega,
                 'seguimiento' => $seguimiento,
                 'detalles' => $detalles
             ]
@@ -447,46 +450,143 @@ class PedidosController extends Controller
     {
         DB::beginTransaction();
         try {
-            $userId = Auth::guard('web')->user()->id;
+            $pedido = DB::table('pedidos')
+                ->where('id_pedido', $request->id_pedido)
+                ->first();
 
-            // 1. Registrar seguimiento del pedido
-            $idSeguimiento = DB::table('pedido_seguimiento')->insertGetId([
+            if (!$pedido) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pedido no encontrado'
+                ], 404);
+            }
+
+            // BLOQUEO TOTAL si ya está ANULADO
+            if ($pedido->estado_pedido === 'ANULADO') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Este pedido ya está ANULADO y no puede modificarse'
+                ], 400);
+            }
+
+            $estado = (int) $request->id_estado_seguimiento;
+            $estadosPermitidos = [3, 4, 7]; // VALIDADO, REPROGRAMADO, ANULADO
+
+            if (!in_array($estado, $estadosPermitidos)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Estado no permitido'
+                ], 400);
+            }
+
+            if ($estado === 3 && $pedido->estado_pedido !== 'PENDIENTE') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Solo se pueden validar pedidos en estado PENDIENTE'
+                ], 400);
+            }
+
+            $userId = Auth::guard('web')->user()->id;
+            $estado = (int)$request->id_estado_seguimiento;
+
+            $evidenciaChat = null;
+            $evidenciaLlamada = null;
+            $evidenciaSoporte = null;
+
+            if ($request->hasFile('evidencia_chat')) {
+                $evidenciaChat = $this->subirEvidenciaPublic($request->file('evidencia_chat'));
+            }
+
+            if ($request->hasFile('evidencia_llamada_chat')) {
+                $evidenciaLlamada = $this->subirEvidenciaPublic($request->file('evidencia_llamada_chat'));
+            }
+
+            /* if ($request->hasFile('evidencia_guia')) {
+                $evidenciaSoporte = $this->subirEvidenciaPublic($request->file('evidencia_guia'));
+            } */
+
+            DB::table('pedido_seguimiento')->insert([
                 'id_pedido' => $request->id_pedido,
                 'id_estado_seguimiento' => $request->id_estado_seguimiento,
-                'id_motorizado' => $request->id_motorizado,
+                'id_motorizado' => $request->id_motorizado ?? null,
                 'id_usuario_registro' => $userId,
                 'comentario' => $request->comentario,
+
+                'evidencia_chat' => $evidenciaChat,
+                'evidencia_llamada_chat' => $evidenciaLlamada,
+                /* 'evidencia_guia' => $evidenciaSoporte, */
+
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
 
-            // 2. Actualizar stock_reservado a 'PREPARADO' si se valida el pedido
-            DB::table('stock_reservado')
-                ->where('id_pedido', $request->id_pedido)
-                ->where('estado', 'RESERVADO')
-                ->update(['estado' => 'PREPARADO', 'updated_at' => now()]);
 
-            // 3. Actualizar estado del pedido a 'VALIDADO'
-            DB::table('pedidos')
-                ->where('id_pedido', $request->id_pedido)
-                ->update(['estado_pedido' => 'VALIDADO', 'updated_at' => now()]);
+            // 2. Lógica según estado
+            if ($estado === 3) { // VALIDADO
+
+                DB::table('stock_reservado')
+                    ->where('id_pedido', $request->id_pedido)
+                    ->where('estado', 'RESERVADO')
+                    ->update([
+                        'estado' => 'PREPARADO',
+                        'updated_at' => now()
+                    ]);
+
+                DB::table('pedidos')
+                    ->where('id_pedido', $request->id_pedido)
+                    ->update([
+                        'estado_pedido' => 'VALIDADO',
+                        'updated_at' => now()
+                    ]);
+
+            } elseif ($estado === 4) { // REPROGRAMADO
+
+                DB::table('pedidos')
+                    ->where('id_pedido', $request->id_pedido)
+                    ->update([
+                        'fecha_entrega' => $request->fecha_entrega,
+                        'direccion_cliente' => $request->direccion,
+                        'estado_pedido' => 'REPROGRAMADO',
+                        'updated_at' => now()
+                    ]);
+            } elseif ($estado === 7) { // ANULADO
+
+                // 1. Liberar stock reservado
+                DB::table('stock_reservado')
+                    ->where('id_pedido', $request->id_pedido)
+                    ->whereIn('estado', ['RESERVADO', 'PREPARADO'])
+                    ->update([
+                        'estado' => 'LIBERADO',
+                        'updated_at' => now()
+                    ]);
+
+                // 2. Cambiar estado del pedido
+                DB::table('pedidos')
+                    ->where('id_pedido', $request->id_pedido)
+                    ->update([
+                        'estado_pedido' => 'ANULADO',
+                        'updated_at' => now()
+                    ]);
+            }
+
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Pedido validado correctamente. Stock reservado actualizado.'
+                'message' => 'Pedido actualizado correctamente'
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Ocurrió un error al validar el pedido.',
+                'message' => 'Error al actualizar pedido',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
+
 
 
     public function descargarGuia($id_pedido)
@@ -530,7 +630,7 @@ class PedidosController extends Controller
     }
 
 
-    public function entregar(Request $request)
+    /* public function entregar(Request $request)
     {
         $idPedido = $request->id_pedido;
 
@@ -608,8 +708,103 @@ class PedidosController extends Controller
             DB::rollBack();
             return response()->json(['message' => $e->getMessage()], 500);
         }
-    }
+    } */
 
+    public function entregar(Request $request)
+    {
+        $idPedido = $request->id_pedido;
+
+        DB::beginTransaction();
+
+        try {
+
+            $rutaGuia = null;
+
+            if ($request->hasFile('evidencia_guia')) {
+                $rutaGuia = $this->subirEvidenciaPublic(
+                    $request->file('evidencia_guia')
+                );
+            }
+
+            // 1. Cambiar estado del pedido
+            DB::table('pedidos')
+                ->where('id_pedido', $idPedido)
+                ->update([
+                    'estado_pedido' => 'ENTREGADO',
+                    'updated_at' => now()
+                ]);
+
+            // 2. Reservas
+            $reservas = DB::table('stock_reservado')
+                ->where('id_pedido', $idPedido)
+                ->where('estado', 'PREPARADO')
+                ->get();
+
+            foreach ($reservas as $r) {
+
+                $producto = DB::table('productos')
+                    ->where('id_producto', $r->id_producto)
+                    ->lockForUpdate()
+                    ->first();
+
+                $stockNuevo = $producto->stock - $r->cantidad;
+
+                if ($stockNuevo < 0) {
+                    throw new \Exception(
+                        "Stock insuficiente: {$producto->descripcion}"
+                    );
+                }
+
+                DB::table('productos')
+                    ->where('id_producto', $r->id_producto)
+                    ->update(['stock' => $stockNuevo]);
+
+                DB::table('kardex')->insert([
+                    'id_producto' => $r->id_producto,
+                    'fecha_movimiento' => now(),
+                    'tipo_movimiento' => 'S',
+                    'motivo' => 'ENTREGA PEDIDO',
+                    'id_origen' => $idPedido,
+                    'cantidad' => $r->cantidad,
+                    'stock_anterior' => $producto->stock,
+                    'stock_nuevo' => $stockNuevo,
+                    'costo_unitario' => 0,
+                    'costo_total' => 0,
+                ]);
+            }
+
+            // 3. Confirmar reservas
+            DB::table('stock_reservado')
+                ->where('id_pedido', $idPedido)
+                ->where('estado', 'PREPARADO')
+                ->update([
+                    'estado' => 'CONFIRMADO',
+                    'updated_at' => now()
+                ]);
+
+            // 4. Seguimiento
+            DB::table('pedido_seguimiento')->insert([
+                'id_pedido' => $idPedido,
+                'id_estado_seguimiento' => 6, // ENTREGADO
+                'id_usuario_registro' => auth()->id(),
+                'comentario' => 'Pedido entregado.',
+                'evidencia_guia' => $rutaGuia,
+                'created_at' => now(),
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Pedido entregado correctamente'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     public function stockActualizado()
     {
@@ -619,7 +814,7 @@ class PedidosController extends Controller
             ->map(function($p) {
                 $reservado = DB::table('stock_reservado')
                     ->where('id_producto', $p->id_producto)
-                    ->where('estado', 'RESERVADO')
+                    ->whereIn('estado', ['RESERVADO', 'PREPARADO'])
                     ->sum('cantidad');
 
                 $p->stock_disponible = $p->stock - $reservado;
@@ -628,6 +823,35 @@ class PedidosController extends Controller
             });
 
         return response()->json($productos);
+    }
+
+    public function seguimiento(Request $request)
+    {
+        return DB::table('pedido_seguimiento as ps')
+            ->join('estado_seguimiento as es', 'es.id_estado_seguimiento', '=', 'ps.id_estado_seguimiento')
+            ->where('ps.id_pedido', $request->id_pedido)
+            ->whereNull('ps.deleted_at')
+            ->orderBy('ps.created_at', 'asc')
+            ->select(
+                'ps.id_seguimiento',
+                'es.nombre as estado',
+                'ps.comentario',
+                'ps.evidencia_chat',
+                'ps.evidencia_llamada_chat',
+                'ps.evidencia_entrega',
+                'ps.evidencia_guia',
+                DB::raw("DATE_FORMAT(ps.created_at, '%d/%m/%Y %H:%i') as created_at")
+            )
+            ->get();
+    }
+
+   private function subirEvidenciaPublic($file)
+    {
+        $nombre = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+        $file->move(public_path('uploads/evidencias'), $nombre);
+
+
+        return '/uploads/evidencias/' . $nombre;
     }
 
 

@@ -49,6 +49,8 @@ class MotorizadoController extends Controller
             ->select(
                 'p.id_pedido',
                 'p.codigo_pedido',
+                'p.latitud_envio',
+                'p.longitud_envio',
                 'p.nombre_cliente',
                 'p.telefono_cliente',
                 'p.direccion_cliente',

@@ -96,7 +96,8 @@
                     <th>#</th>
                     <th>Pedido</th>
                     <th>Usuario</th>
-                    <th>Fecha</th>
+                    <th>Fecha Registro</th>
+                    <th>Fecha Entrega</th>
                     <th>Total</th>
                     <th>Acciones</th>
                 </tr>
@@ -152,7 +153,8 @@
             </div>
             <div class="modal-body">
                 <p><strong>Pedido:</strong> <span id="d_codigo_pedido"></span></p>
-                <p><strong>Fecha:</strong> <span id="d_fecha_pedido"></span></p>
+                <p><strong>Fecha Registro:</strong> <span id="d_fecha_pedido"></span></p>
+                <p><strong>Fecha Entrega solicitado:</strong> <span id="d_fecha_entrega"></span></p>
                 <p><strong>Total:</strong> <span id="d_total"></span></p>
                 <h6>Productos</h6>
                 <div id="d_detalles"></div>
@@ -195,6 +197,9 @@ $(function() {
                 data: 'fecha_pedido'
             },
             {
+                data: 'fecha_entrega'
+            },
+            {
                 data: 'total',
                 render: d => `S/ ${parseFloat(d).toFixed(2)}`
             },
@@ -202,34 +207,47 @@ $(function() {
                 data: null,
                 render: d => {
 
-                    // Normalizamos por seguridad
                     const estado = (d.estado_pedido || '').trim().toUpperCase();
+                    let html = '';
 
                     // SOLO PENDIENTE
                     if (estado === 'PENDIENTE') {
-                        return `
-                <button class="btn-gestionar"
-                    onclick="abrirGestion(${d.id_pedido})">
-                    Gestionar
-                </button>
+                        html += `
+                            <button class="btn-gestionar"
+                                onclick="abrirGestion(${d.id_pedido})">
+                                Gestionar
+                            </button>
 
-                <button class="btn btn-dark btn-sm"
-                    style="border-radius:25px;"
-                    onclick="verDetalle(${d.id_pedido})">
-                    Ver
-                </button>
-            `;
+                            <button class="btn btn-dark btn-sm"
+                                style="border-radius:25px;"
+                                onclick="verDetalle(${d.id_pedido})">
+                                Ver
+                            </button>
+
+                            <button class="btn btn-danger btn-sm"
+                                style="border-radius:25px;"
+                                onclick="anularPedido(${d.id_pedido})">
+                                <i class="fa fa-ban"></i>
+                            </button>
+                        `;
                     }
 
-                    return `
-                    <button class="btn btn-dark btn-sm"
-                        style="border-radius:25px;"
-                        onclick="verDetalle(${d.id_pedido})">
-                        Ver
-                    </button>
-                `;
+                    // OTROS ESTADOS (VALIDADO / ENTREGADO)
+                    else if (estado !== 'ANULADO') {
+                        html += `
+                            <button class="btn btn-dark btn-sm"
+                                style="border-radius:25px;"
+                                onclick="verDetalle(${d.id_pedido})">
+                                Ver
+                            </button>
+                        `;
+                    } else {
+                        html = `<span class="badge badge-danger">ANULADO</span>`;
+                    }
+                    return html;
                 }
             }
+
 
         ]
     });
@@ -319,6 +337,7 @@ function verDetalle(id) {
         $('#d_direccion_cliente').text(p.direccion_cliente);
         $('#d_codigo_pedido').text(p.codigo_pedido);
         $('#d_fecha_pedido').text(p.fecha_pedido);
+        $('#d_fecha_entrega').text(p.fecha_entrega);
         $('#d_total').text(`S/ ${parseFloat(p.total).toFixed(2)}`);
 
         // Tabla con código del producto añadido
@@ -333,6 +352,55 @@ function verDetalle(id) {
         html += '</table>';
 
         $('#d_detalles').html(html);
+    });
+}
+
+function anularPedido(idPedido) {
+
+    Swal.fire({
+        title: '¿Anular pedido?',
+        input: 'textarea',
+        inputLabel: 'Motivo de anulación',
+        inputPlaceholder: 'Escribe el motivo...',
+        inputAttributes: {
+            required: true
+        },
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, anular',
+        cancelButtonText: 'Cancelar',
+        preConfirm: (comentario) => {
+            if (!comentario || !comentario.trim()) {
+                Swal.showValidationMessage('El motivo es obligatorio');
+            }
+            return comentario.trim();
+        }
+    }).then(result => {
+
+        if (!result.isConfirmed) return;
+
+        $.ajax({
+            url: "{{ route('auth.pedidos.gestion_update') }}",
+            type: "POST",
+            data: {
+                _token: '{{ csrf_token() }}',
+                id_pedido: idPedido,
+                id_estado_seguimiento: 7,
+                comentario: result.value
+            },
+            success: function(resp) {
+                Swal.fire('Anulado', resp.message, 'success');
+                $('#tableGestionPedidos').DataTable().ajax.reload();
+            },
+            error: function(xhr) {
+                Swal.fire(
+                    'Error',
+                    xhr.responseJSON?.message || 'No se pudo anular el pedido',
+                    'error'
+                );
+            }
+        });
+
     });
 }
 </script>

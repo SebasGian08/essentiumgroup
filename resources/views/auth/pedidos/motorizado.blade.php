@@ -117,6 +117,21 @@
                         <label>Comentario</label>
                         <textarea id="g_comentario" class="form-control"></textarea>
                     </div>
+                    <div class="form-group">
+                        <label>Evidencia de Chat</label>
+                        <input type="file" id="g_evidencia_chat" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Evidencia Llamada</label>
+                        <input type="file" id="g_evidencia_llamada" class="form-control">
+                    </div>
+
+                    <!-- <div class="form-group">
+                        <label>Evidencia Soporte</label>
+                        <input type="file" id="g_evidencia_soporte" class="form-control">
+                    </div> -->
+
                 </div>
 
                 <div class="modal-footer">
@@ -145,6 +160,45 @@
         </div>
     </div>
 </div>
+
+{{-- Modal Confirmar Entrega --}}
+<div class="modal fade" id="modalEntregaPedido">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header text-white">
+                <h5 class="modal-title">
+                    <i class="fa fa-check"></i> Confirmar Entrega
+                </h5>
+                <button class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <input type="hidden" id="e_id_pedido">
+
+                <div class="form-group">
+                    <label>Evidencia de Guía (imagen o PDF)</label>
+                    <input type="file" id="e_evidencia_guia" class="form-control">
+                </div>
+
+                <small class="text-muted">
+                    Se recomienda subir la guía firmada o foto de entrega.
+                </small>
+            </div>
+
+            <div class="modal-footer">
+                <!--                 <button class="btn btn-secondary" data-dismiss="modal">
+                    Cancelar
+                </button> -->
+                <button class="btn btn-secondary" onclick="confirmarEntrega()">
+                    Confirmar Entrega
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @section('scripts')
@@ -191,11 +245,24 @@ $(function() {
 
                     const estado = (d.estado_pedido || '').trim().toUpperCase();
 
+                    let btnMaps = '';
+
+                    if (d.latitud_envio && d.longitud_envio) {
+                        btnMaps = `
+                <button
+                    class="btn btn-info btn-sm"
+                    style="border-radius:25px;"
+                    onclick="verUbicacion(${d.latitud_envio}, ${d.longitud_envio})">
+                    Ubicación
+                </button>
+            `;
+                    }
 
                     if (estado === 'ENTREGADO') {
                         return `
+                ${btnMaps}
                 <a href="/auth/pedidos/${d.id_pedido}/guia"
-                    class="btn btn-dark btn-sm ml-1"
+                    class="btn btn-dark btn-sm"
                     target="_blank"
                     style="border-radius:25px;">
                     Guía
@@ -204,6 +271,8 @@ $(function() {
                     }
 
                     return `
+            ${btnMaps}
+
             <button class="btn-gestionar"
                 onclick="abrirGestion(${d.id_pedido})">
                 Reprogramar
@@ -224,6 +293,7 @@ $(function() {
         `;
                 }
             }
+
 
         ]
     });
@@ -248,42 +318,69 @@ function abrirGestion(id) {
 }
 
 function reprogramarPedido() {
-    const idPedido = $('#g_id_pedido').val();
-    const fechaEntrega = $('#g_fecha_entrega').val();
-    const direccion = $('#g_direccion').val();
-    const comentario = $('#g_comentario').val();
 
-    if (!idPedido) return Swal.fire('Error', 'No se obtuvo el pedido', 'error');
+    const fecha = $('#g_fecha_entrega').val();
+    const direccion = $('#g_direccion').val().trim();
+    const comentario = $('#g_comentario').val().trim();
+
+    // 🔴 VALIDACIONES
+    if (!fecha) {
+        Swal.fire('Atención', 'Debe seleccionar la fecha de entrega', 'warning');
+        return;
+    }
+
+    if (!direccion) {
+        Swal.fire('Atención', 'Debe ingresar la dirección de entrega', 'warning');
+        return;
+    }
+
+    if (!comentario) {
+        Swal.fire('Atención', 'Debe ingresar un comentario', 'warning');
+        return;
+    }
+
+    // ✅ SI PASA VALIDACIÓN
+    let formData = new FormData();
+    formData.append('_token', '{{ csrf_token() }}');
+    formData.append('id_pedido', $('#g_id_pedido').val());
+    formData.append('fecha_entrega', fecha);
+    formData.append('direccion', direccion);
+    formData.append('comentario', comentario);
+    formData.append('id_estado_seguimiento', 4); // REPROGRAMADO
+
+    if ($('#g_evidencia_chat')[0].files[0])
+        formData.append('evidencia_chat', $('#g_evidencia_chat')[0].files[0]);
+
+    if ($('#g_evidencia_llamada')[0].files[0])
+        formData.append('evidencia_llamada_chat', $('#g_evidencia_llamada')[0].files[0]);
 
     Swal.fire({
-        title: 'Reprogramar Pedido?',
+        title: '¿Reprogramar pedido?',
         icon: 'question',
         showCancelButton: true
     }).then(result => {
+
         if (!result.isConfirmed) return;
 
         $.ajax({
             url: "{{ route('auth.pedidos.gestion_update') }}",
             type: "POST",
-            data: {
-                _token: '{{ csrf_token() }}',
-                id_pedido: idPedido,
-                fecha_entrega: fechaEntrega,
-                direccion: direccion,
-                comentario: comentario,
-                id_estado_seguimiento: 4 // 4 = REPROGRAMADO
-            },
+            data: formData,
+            processData: false,
+            contentType: false,
             success: function() {
                 $('#tableMotorizado').DataTable().ajax.reload();
                 $('#modalGestionPedido').modal('hide');
-                Swal.fire('Reprogramado', 'El pedido ha sido actualizado', 'success');
+                Swal.fire('Reprogramado', 'Pedido actualizado correctamente', 'success');
             },
             error: function(xhr) {
-                Swal.fire('Error', 'Ocurrió un error: ' + xhr.responseText, 'error');
+                Swal.fire('Error', xhr.responseText, 'error');
             }
         });
     });
 }
+
+
 
 function verDetalle(id) {
     $('#modalDetallePedido').modal('show');
@@ -305,31 +402,68 @@ function verDetalle(id) {
 }
 
 function entregarPedido(idPedido) {
+    $('#e_id_pedido').val(idPedido);
+    $('#e_evidencia_guia').val('');
+    $('#modalEntregaPedido').modal('show');
+}
+
+function confirmarEntrega() {
+
+    let formData = new FormData();
+
+    formData.append('_token', '{{ csrf_token() }}');
+    formData.append('id_pedido', $('#e_id_pedido').val());
+
+    if ($('#e_evidencia_guia')[0].files.length > 0) {
+        formData.append(
+            'evidencia_guia',
+            $('#e_evidencia_guia')[0].files[0]
+        );
+    }
+
     Swal.fire({
-        title: 'Confirmar entrega del pedido?',
+        title: '¿Confirmar entrega?',
+        text: 'El stock será descontado',
         icon: 'question',
         showCancelButton: true,
-        confirmButtonText: 'Sí, entregar',
-        cancelButtonText: 'Cancelar'
+        confirmButtonText: 'Sí, entregar'
     }).then(result => {
+
         if (!result.isConfirmed) return;
 
         $.ajax({
-            url: "{{ route('auth.pedidos.entregar') }}", // ruta del controller
+            url: "{{ route('auth.pedidos.entregar') }}",
             type: "POST",
-            data: {
-                _token: '{{ csrf_token() }}',
-                id_pedido: idPedido
-            },
+            data: formData,
+            processData: false,
+            contentType: false,
             success: function(res) {
+                $('#modalEntregaPedido').modal('hide');
                 $('#tableMotorizado').DataTable().ajax.reload();
                 Swal.fire('Entregado', res.message, 'success');
             },
             error: function(xhr) {
-                Swal.fire('Error', xhr.responseJSON?.message || 'Ocurrió un error', 'error');
+                Swal.fire(
+                    'Error',
+                    xhr.responseJSON?.message || 'Error al entregar pedido',
+                    'error'
+                );
             }
         });
+
     });
+
+}
+
+function verUbicacion(lat, lng) {
+
+    if (!lat || !lng) {
+        Swal.fire('Ubicación no disponible', 'Este pedido no tiene coordenadas', 'warning');
+        return;
+    }
+
+    const url = `https://www.google.com/maps?q=${lat},${lng}`;
+    window.open(url, '_blank');
 }
 </script>
 @endsection
