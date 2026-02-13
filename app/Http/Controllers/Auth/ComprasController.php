@@ -43,14 +43,14 @@ class ComprasController extends Controller
         try {
             // REGISTRAR COMPRA
             $idCompra = DB::table('compra')->insertGetId([
-                'id_proveedor'      => $request->id_proveedor,
-                'tipo_documento'    => $request->tipo_documento,
-                'numero_documento'  => $request->numero_documento,
-                'fecha_compra'      => $request->fecha_compra,
-                'total'             => $request->total,
-                'observacion'       => $request->observacion,
-                'estado'            => 1,
-                'created_at'        => now(),
+                'id_proveedor'     => $request->id_proveedor,
+                'tipo_documento'   => $request->tipo_documento,
+                'numero_documento' => $request->numero_documento,
+                'fecha_compra'     => $request->fecha_compra,
+                'total'            => $request->total,
+                'observacion'      => $request->observacion,
+                'estado'           => 1,
+                'created_at'       => now(),
             ]);
 
             // DETALLE + KARDEX
@@ -65,9 +65,18 @@ class ComprasController extends Controller
                 }
 
                 $stockAnterior = $producto->stock;
-                $stockNuevo    = $stockAnterior + $item['cantidad'];
+                $stockNuevo = $stockAnterior + $item['cantidad'];
 
-                // Insert detalle
+                // CALCULAR PRECIO PROMEDIO PONDERADO
+                $precioAnterior = $producto->precio_compra ?? 0;
+                $cantidadAnterior = $stockAnterior;
+
+                $precioNuevo = round(
+                    (($precioAnterior * $cantidadAnterior) + ($item['costo'] * $item['cantidad'])) 
+                    / ($cantidadAnterior + $item['cantidad']), 2
+                );
+
+                // Insertar detalle de compra
                 DB::table('compra_detalle')->insert([
                     'id_compra'      => $idCompra,
                     'id_producto'    => $item['id_producto'],
@@ -76,7 +85,7 @@ class ComprasController extends Controller
                     'subtotal'       => round($item['cantidad'] * $item['costo'], 2),
                 ]);
 
-                // Insert kardex (ENTRADA)
+                // Insertar kardex (ENTRADA_COMPRA)
                 DB::table('kardex')->insert([
                     'id_producto'        => $item['id_producto'],
                     'fecha_movimiento'   => now(),
@@ -90,23 +99,25 @@ class ComprasController extends Controller
                     'costo_total'        => round($item['cantidad'] * $item['costo'], 2),
                 ]);
 
-
-                // Actualizar stock
+                // Actualizar stock y precio de compra en productos
                 DB::table('productos')
                     ->where('id_producto', $item['id_producto'])
-                    ->update(['stock' => $stockNuevo]);
+                    ->update([
+                        'stock' => $stockNuevo,
+                        'precio_compra' => $precioNuevo
+                    ]);
             }
 
             DB::commit();
 
             return redirect()->back()->with('success', 'Compra registrada correctamente');
+
         } catch (\Exception $e) {
             DB::rollBack();
-
-            // Retornar error a la sesión para mostrarlo en la vista
             return redirect()->back()->withInput()->withErrors(['error' => $e->getMessage()]);
         }
     }
+
 
 
     public function list_all(Request $request)

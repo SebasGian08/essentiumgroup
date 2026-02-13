@@ -7,6 +7,7 @@
 @section('styles')
 <link rel="stylesheet" href="{{ asset('auth/plugins/datatable/datatables.min.css') }}">
 <link rel="stylesheet" href="{{ asset('app/assets_pedidos/style.css') }}">
+<link rel="stylesheet" href="{{ asset('app/assets_pedidos/listado.css') }}">
 @endsection
 
 @section('contenido')

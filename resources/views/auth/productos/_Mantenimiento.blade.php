@@ -25,10 +25,6 @@
                     <div class="form-group col-md-6">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <label for="id_producto_marca" class="mb-0"><b>Marca</b></label>
-                            <a href="#" class="btn btn-link btn-sm p-0" data-toggle="modal"
-                                data-target="#modalAgregarMarca">
-                                <i class="fa fa-plus"></i> Agregar Marca
-                            </a>
                         </div>
 
                         <select class="form-control" name="id_producto_marca" id="id_producto_marca" required>

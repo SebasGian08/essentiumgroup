@@ -104,16 +104,24 @@
             <nav class="navbar navbar-expand-lg">
                 <div class="collapse navbar-collapse" id="navbarNavDropdown">
                     <ul class="navbar-nav">
+
+                        {{-- Inicio --}}
                         <li class="nav-item {{ Route::currentRouteName() == 'auth.inicio' ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('auth.inicio') }}"><span class="active-item-here"></span>
-                                <i class="fa fa-home mr-5"></i> <span>Inicio</span>
+                            <a class="nav-link" href="{{ route('auth.inicio') }}">
+                                <span class="active-item-here"></span>
+                                <i class="fa fa-home mr-5"></i> Inicio
                             </a>
                         </li>
+
+                        @if(in_array(Auth::user()->profile_id, [
+                        \BolsaTrabajo\App::$PERFIL_CLIENTE_ASOCIADO,
+                        \BolsaTrabajo\App::$PERFIL_DESARROLLADOR,
+                        \BolsaTrabajo\App::$PERFIL_ADMINISTRADOR
+                        ]))
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true"
                                 aria-expanded="false">
-                                <i class="fa fa-shopping-cart mr-2"></i>
-                                <span>Dropshipping</span>
+                                <i class="fa fa-shopping-cart mr-2"></i> Dropshipping
                             </a>
                             <ul class="dropdown-menu multilevel scale-up-left">
                                 <li class="nav-item">
@@ -133,16 +141,17 @@
                                 </li>
                             </ul>
                         </li>
+                        @endif
 
-                        @if (Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_DESARROLLADOR ||
-                        Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_ADMINISTRADOR ||
-                        Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_JEFE)
-
+                        @if(in_array(Auth::user()->profile_id, [
+                        \BolsaTrabajo\App::$PERFIL_DESARROLLADOR,
+                        \BolsaTrabajo\App::$PERFIL_ADMINISTRADOR,
+                        \BolsaTrabajo\App::$PERFIL_JEFE
+                        ]))
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true"
                                 aria-expanded="false">
-                                <i class="fa fa-archive mr-2"></i>
-                                <span>Almacén</span>
+                                <i class="fa fa-archive mr-2"></i> Almacén
                             </a>
                             <ul class="dropdown-menu multilevel scale-up-left">
                                 <li class="nav-item">
@@ -156,11 +165,6 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ route('auth.productos') }}">
-                                        <i class="fa fa-cube mr-2"></i> Gestión de Productos
-                                    </a>
-                                </li>
-                                <li class="nav-item">
                                     <a class="nav-link" href="{{ route('auth.pedidos.gestion') }}">
                                         <i class="fa fa-shopping-cart mr-2"></i> Aprobación de Pedidos
                                     </a>
@@ -170,27 +174,34 @@
                                         <i class="fa fa-exchange mr-2"></i> Ver movimientos
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('auth.ajustes.create') }}">
+                                        <i class="fa fa-balance-scale mr-2"></i> Ajustes de Cuadre
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('auth.devoluciones.create') }}">
+                                        <i class="fa fa-undo mr-2"></i> Devoluciones
+                                    </a>
+                                </li>
                             </ul>
                         </li>
+
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('auth.reportes') }}">
-                                <i class="fa fa-bar-chart mr-2"></i>
-                                <span>Reportes</span>
+                                <i class="fa fa-bar-chart mr-2"></i> Reportes
                             </a>
                         </li>
 
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true"
                                 aria-expanded="false">
-                                <span class="active-item-here"></span>
-                                <i class="fa fa-cog mr-2"></i>
-                                <span>Opciones Adicionales</span>
+                                <i class="fa fa-cog mr-2"></i> Mantenimiento
                             </a>
                             <ul class="dropdown-menu multilevel scale-up-left">
                                 <li class="nav-item">
                                     <a class="nav-link" href="{{ route('auth.profiles') }}">
-                                        <i class="fa fa-key mr-2"></i>
-                                        Gestión de Roles
+                                        <i class="fa fa-key mr-2"></i> Gestión de Roles
                                     </a>
                                 </li>
                                 <li class="nav-item">
@@ -211,21 +222,23 @@
                             </ul>
                         </li>
                         @endif
-                        @if (Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_DESARROLLADOR ||
-                        Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_ADMINISTRADOR ||
-                        Auth::guard('web')->user()->profile_id == \BolsaTrabajo\App::$PERFIL_MOTORIZADO)
+
+                        @if(in_array(Auth::user()->profile_id, [
+                        \BolsaTrabajo\App::$PERFIL_MOTORIZADO,
+                        \BolsaTrabajo\App::$PERFIL_DESARROLLADOR
+                        ]))
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('auth.pedidos.motorizado') }}">
-                                <i class="fa fa-motorcycle mr-2"></i>
-                                <span>Despacho</span>
+                                <i class="fa fa-motorcycle mr-2"></i> Despacho
                             </a>
                         </li>
-
                         @endif
 
+                    </ul>
                 </div>
             </nav>
         </div>
+
         @yield('contenido')
 
 

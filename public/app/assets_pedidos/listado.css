@@ -150,7 +150,7 @@
 }
 
 /* Estilos para la tabla */
-#tablePedidos thead th {
+#tableProductosAjuste thead th {
     background-color: #272727;
     color: #fff;
     font-weight: 600;
@@ -178,4 +178,32 @@
     background-color: #5864ff;
     color: #fff;
     transform: scale(1.05);
+}
+
+/* Estilos para la tabla */
+#tableStock thead th {
+    background-color: #272727;
+    color: #fff;
+    font-weight: 600;
+    text-align: left;
+    padding: 12px;
+    border-radius: 8px 8px 0 0;
+}
+
+#tableProductosDevolucion thead th {
+    background-color: #272727;
+    color: #fff;
+    font-weight: 600;
+    text-align: left;
+    padding: 12px;
+    border-radius: 8px 8px 0 0;
+}
+
+#tableProductos thead th {
+    background-color: #272727;
+    color: #fff;
+    font-weight: 600;
+    text-align: left;
+    padding: 12px;
+    border-radius: 8px 8px 0 0;
 }

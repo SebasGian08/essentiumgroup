@@ -174,6 +174,24 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalProductos" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa fa-box"></i> Productos del pedido</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body" id="contenedorProductos">
+                <p class="text-center text-muted">Cargando productos...</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 @endsection
 
 @section('scripts')
@@ -245,18 +263,20 @@ $(document).ready(function() {
                 </div>`;
                 }
             },
-            { // Productos
+            {
                 data: 'productos',
                 orderable: false,
                 searchable: false,
-                width: "280px",
-                render: function(data) {
+                width: "100px",
+                render: function(data, type, row) {
                     if (!data || data.length === 0)
                         return '<span class="text-muted">Sin productos</span>';
 
-                    return data.map(p =>
-                        `<div class="producto-badge">${p.descripcion} (${p.cantidad})</div>`
-                    ).join('');
+                    // Botón de lupa para abrir modal
+                    return `<button class="btn btn-sm btn-primary btn-ver-productos" 
+                        data-productos='${JSON.stringify(data)}'>
+                    <i class="fa fa-search"></i>
+                </button>`;
                 }
             },
             { // Total
@@ -286,24 +306,24 @@ $(document).ready(function() {
 
                     let botones = '';
 
-                    // 🔍 Ver seguimiento (solo si NO está anulado)
+                    // Ver seguimiento (solo si NO está anulado)
                     if (row.estado !== 'ANULADO') {
                         botones += `
-                <button class="btn btn-sm btn-gestionar btn-ver-seguimiento"
-                        data-id="${row.id_pedido}">
-                    <i class="fa fa-eye"></i> Ver
-                </button>
-            `;
+                            <button class="btn btn-sm btn-gestionar btn-ver-seguimiento"
+                                    data-id="${row.id_pedido}">
+                                <i class="fa fa-eye"></i> Ver
+                            </button>
+                        `;
                     }
 
-                    // ❌ Anular pedido (solo si está pendiente)
+                    // Anular pedido (solo si está pendiente)
                     if (row.estado === 'PENDIENTE') {
                         botones += `
-                <button class="btn btn-sm btn-danger btn-anular-pedido"
-                        data-id="${row.id_pedido}">
-                    <i class="fa fa-ban"></i>
-                </button>
-            `;
+                            <button class="btn btn-sm btn-danger btn-anular-pedido"
+                                    data-id="${row.id_pedido}">
+                                <i class="fa fa-ban"></i>
+                            </button>
+                        `;
                     }
 
 
@@ -499,6 +519,26 @@ $(document).on('click', '.btn-anular-pedido', function() {
         });
 
     });
+});
+$(document).on('click', '.btn-ver-productos', function() {
+    let productos = $(this).data('productos');
+
+    if (!productos || productos.length === 0) {
+        $('#contenedorProductos').html('<p class="text-center text-muted">Sin productos</p>');
+    } else {
+        let html = '<ul class="list-group">';
+        productos.forEach(p => {
+            html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                ${p.descripcion} 
+                <span class="badge badge-primary badge-pill">${p.cantidad}</span>
+             </li>`;
+        });
+
+        html += '</ul>';
+        $('#contenedorProductos').html(html);
+    }
+
+    $('#modalProductos').modal('show');
 });
 </script>
 @endsection

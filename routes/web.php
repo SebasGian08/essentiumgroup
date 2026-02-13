@@ -91,9 +91,29 @@ Route::group(['prefix' => 'auth', 'middleware' => 'auth:web'], function () {
     });
     /* MOVIMIENTOS */
     Route::group(['prefix' => 'movimientos'], function () {
+
+        // Listado / Reporte
         Route::get('/', 'Auth\MovimientosController@index')->name('auth.movimientos');
         Route::get('/list_all', 'Auth\MovimientosController@list_all')->name('auth.movimientos.list_all');
+
+        // Crear Movimiento
+        Route::get('/create', 'Auth\MovimientosController@create')->name('auth.movimientos.create');
+        Route::post('/store', 'Auth\MovimientosController@store')->name('auth.movimientos.store');
+
+        // Crear Devolución
+        Route::get('/devoluciones/create', 'Auth\MovimientosController@devolucionesCreate')->name('auth.devoluciones.create');
+        Route::post('/devoluciones/store', 'Auth\MovimientosController@devolucionesStore')->name('auth.devoluciones.store');
+
+        // Crear Ajuste de Cuadre
+        Route::get('/ajustes/create', 'Auth\MovimientosController@ajustesCreate')->name('auth.ajustes.create');
+        Route::post('/ajustes/store', 'Auth\MovimientosController@ajustesStore')->name('auth.ajustes.store');
+
     });
+
+
+
+
+
     /* MARCAS */
     Route::group(['prefix' => 'marcas'], function () {
 

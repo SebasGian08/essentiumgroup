@@ -320,14 +320,15 @@ class PedidosController extends Controller
             ->map(function ($pedido) {
 
 
-                $pedido->productos = collect(explode(',', $pedido->productos ?? ''))
+            $pedido->productos = collect(explode('|||', $pedido->productos ?? ''))
                     ->map(function ($p) {
                         preg_match('/^(.*)\s\((\d+)\)$/', trim($p), $m);
                         return [
                             'descripcion' => $m[1] ?? trim($p),
                             'cantidad' => $m[2] ?? 0
                         ];
-                    });
+            });
+
 
                 return $pedido;
             });
@@ -544,7 +545,7 @@ class PedidosController extends Controller
                 DB::table('pedidos')
                     ->where('id_pedido', $request->id_pedido)
                     ->update([
-                        'fecha_entrega' => $request->fecha_entrega,
+                        /* 'fecha_entrega' => $request->fecha_entrega, */
                         'direccion_cliente' => $request->direccion,
                         'estado_pedido' => 'REPROGRAMADO',
                         'updated_at' => now()
