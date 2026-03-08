@@ -87,13 +87,6 @@
             <p class="return-text">
                 <a href="{{ route('index') }}" class="return-link">← Regresar a la página principal</a>
             </p>
-            <!-- <div class="icons">
-                <i class='bx bxl-facebook'></i>
-                <i class='bx bxl-instagram'></i>
-                <i class='bx bxl-tiktok'></i>
-                <i class='bx bxl-linkedin'></i>
-            </div>
-            <p>Síguenos en nuestras redes sociales</p> -->
         </form>
 
     </div>
@@ -134,6 +127,90 @@ document.querySelector('.form-register').addEventListener('submit', async functi
     }
 });
 </script>
+<script>
+document.querySelector('.form-register').addEventListener('submit', async function(e) {
+    e.preventDefault();
 
+    const form = e.target;
+
+    const pais = form.pais.value.trim();
+    const ecommerce = form.ecommerce.value.trim();
+    const nombres = form.nombres.value.trim();
+    const correo = form.correo.value.trim();
+    const user = form.user.value.trim();
+    const password = form.password.value.trim();
+    const telefono = form.telefono.value.trim();
+
+    const alertaError = document.querySelector('.alerta-error');
+    const alertaExito = document.querySelector('.alerta-exito');
+
+    alertaError.style.display = 'none';
+    alertaExito.style.display = 'none';
+
+    // Validar campos vacíos
+    if (!pais || !ecommerce || !nombres || !correo || !user || !password || !telefono) {
+        alertaError.innerText = "Todos los campos son obligatorios";
+        alertaError.style.display = 'block';
+        return;
+    }
+
+    // Validar email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(correo)) {
+        alertaError.innerText = "Ingrese un correo válido";
+        alertaError.style.display = 'block';
+        return;
+    }
+
+    // Validar usuario
+    if (user.length < 4) {
+        alertaError.innerText = "El usuario debe tener mínimo 4 caracteres";
+        alertaError.style.display = 'block';
+        return;
+    }
+
+    // Validar contraseña
+    if (password.length < 6) {
+        alertaError.innerText = "La contraseña debe tener mínimo 6 caracteres";
+        alertaError.style.display = 'block';
+        return;
+    }
+
+    // Validar teléfono
+    const phoneRegex = /^[0-9]{7,15}$/;
+    if (!phoneRegex.test(telefono)) {
+        alertaError.innerText = "Ingrese un teléfono válido (solo números)";
+        alertaError.style.display = 'block';
+        return;
+    }
+
+    const data = new FormData(form);
+
+    try {
+        const response = await fetch(form.action, {
+            method: "POST",
+            body: data,
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            }
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.Success) {
+            alertaExito.innerText = "Te registraste correctamente";
+            alertaExito.style.display = 'block';
+            form.reset();
+        } else {
+            alertaError.innerText = "Error al registrar usuario";
+            alertaError.style.display = 'block';
+        }
+
+    } catch (error) {
+        alertaError.innerText = "Error en la conexión con el servidor";
+        alertaError.style.display = 'block';
+    }
+});
+</script>
 
 <script src="{{ asset('app/assets_registro_login/js/script.js') }}"></script>
