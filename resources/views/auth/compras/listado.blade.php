@@ -59,6 +59,87 @@
         </div>
     </div>
 </div>
+
+<!-- MODAL VER COMPRA -->
+
+<div class="modal fade" id="modalVerCompra" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa fa-shopping-cart"></i> Detalle de Compra
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <div id="infoCompra"></div>
+
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Costo</th>
+                            <th>Total</th>
+                            <th>Movimiento</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="detalleCompra"></tbody>
+
+                </table>
+
+                <h4 class="text-right">
+                    Total: S/ <span id="totalCompra"></span>
+                </h4>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalKardex">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Movimiento del Producto
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <table class="table table-bordered">
+
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Motivo</th>
+                            <th>Cantidad</th>
+                            <th>Stock Anterior</th>
+                            <th>Stock Nuevo</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="tablaKardex"></tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+    </div>
+</div>
 @endsection
 @section('scripts')
 <script src="{{ asset('auth/plugins/datatable/datatables.min.js') }}"></script>
@@ -125,22 +206,16 @@ $(document).ready(function() {
                 className: 'text-center',
                 render: function(id) {
                     return `
-                        <a href="/auth/compras/ver/${id}" 
-                        class="btn btn-sm btn-outline-primary" 
-                        title="Ver detalle de la compra">
-                            <i class="fa fa-eye"></i>
-                        </a>
-                        <a href="/auth/compras/editar/${id}" 
-                        class="btn btn-sm btn-outline-warning" 
-                        title="Editar compra">
-                            <i class="fa fa-edit"></i>
-                        </a>
-                        <button type="button" 
-                                class="btn btn-sm btn-outline-danger btn-eliminar-compra" 
-                                data-id="${id}" 
-                                title="Eliminar compra">
-                            <i class="fa fa-trash"></i>
+                        <button 
+                        class="btn btn-sm btn-outline-primary btn-ver-compra"
+                        data-id="${id}">
+                        Ver Compra
                         </button>
+                        <a href="/auth/compras/edit/${id}" 
+                        class="btn btn-sm btn-outline-warning">
+                        <i class="fa fa-edit"></i>
+                        </a>
+                        
                     `;
                 }
             }
@@ -159,5 +234,82 @@ $(document).ready(function() {
     });
 
 });
+
+$(document).on("click", ".btn-ver-compra", function() {
+
+    let id = $(this).data("id")
+
+    $.get("/auth/compras/ver/" + id, function(resp) {
+
+        let compra = resp.compra
+        let detalle = resp.detalle
+
+        $("#infoCompra").html(`
+                <p><b>Proveedor:</b> ${compra.razon_social}</p>
+                <p><b>Documento:</b> ${compra.tipo_documento} - ${compra.numero_documento}</p>
+                <p><b>Fecha:</b> ${compra.fecha_compra}</p>
+                `)
+
+        let html = ""
+
+        detalle.forEach(d => {
+
+            html += `
+                <tr>
+                <td>${d.descripcion}</td>
+                <td>${d.cantidad}</td>
+                <td>S/ ${parseFloat(d.costo_unitario).toFixed(2)}</td>
+                <td>S/ ${parseFloat(d.subtotal).toFixed(2)}</td>
+                <td>
+                <button 
+                class="btn btn-sm btn-light-custom btn-ver-kardex"
+                data-id="${d.id_producto}">
+                <i class="fa fa-exchange-alt"></i> Ver Movimiento
+                </button>
+                </td>
+                </tr>
+                `
+
+        })
+
+        $("#detalleCompra").html(html)
+
+        $("#totalCompra").text(parseFloat(compra.total).toFixed(2))
+
+        $("#modalVerCompra").modal("show")
+
+    })
+
+})
+
+$(document).on("click", ".btn-ver-kardex", function() {
+
+    let id = $(this).data("id")
+
+    $.get("/auth/compras/kardex/" + id, function(resp) {
+
+        let html = ""
+
+        resp.movimientos.forEach(m => {
+
+            html += `
+                <tr>
+                <td>${m.fecha_movimiento}</td>
+                <td>${m.motivo}</td>
+                <td>${m.cantidad}</td>
+                <td>${m.stock_anterior}</td>
+                <td>${m.stock_nuevo}</td>
+                </tr>
+                `
+
+        })
+
+        $("#tablaKardex").html(html)
+
+        $("#modalKardex").modal("show")
+
+    })
+
+})
 </script>
 @endsection

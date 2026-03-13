@@ -83,12 +83,20 @@ Route::group(['prefix' => 'auth', 'middleware' => 'auth:web'], function () {
 
     /* COMPRAS */
     Route::group(['prefix' => 'compras'], function () {
+
         Route::get('', 'Auth\ComprasController@index')->name('auth.compras');
-        Route::get('listado', 'Auth\ComprasController@verlistado')->name('auth.compras.listado'); // ✅
+        Route::get('listado', 'Auth\ComprasController@verlistado')->name('auth.compras.listado');
         Route::get('list_all', 'Auth\ComprasController@list_all')->name('auth.compras.list_all');
         Route::post('store', 'Auth\ComprasController@store')->name('auth.compras.store');
         Route::post('delete', 'Auth\ComprasController@delete')->name('auth.compras.delete');
+        Route::get('ver/{id}', 'Auth\ComprasController@verCompra')->name('auth.compras.ver');
+        Route::get('kardex/{id_producto}', 'Auth\ComprasController@verKardex')->name('auth.compras.kardex');
+        Route::get('edit/{id}', 'Auth\ComprasController@edit')->name('auth.compras.edit');
+        Route::put('update/{id}', 'Auth\ComprasController@update')->name('auth.compras.update');
+        Route::post('delete', 'Auth\ComprasController@delete')->name('auth.compras.delete');
+
     });
+
     /* MOVIMIENTOS */
     Route::group(['prefix' => 'movimientos'], function () {
 
